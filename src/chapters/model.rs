@@ -9,12 +9,12 @@ pub struct OrderLine {
     pub qty: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct Batch {
     pub reference: String,
     pub sku: String,
     pub eta: Option<NaiveDate>,
-    pub available_quantity: u32,
+    _purchased_quantity: u32,
     _allocated_lines: HashSet<OrderLine>,
 }
 
@@ -24,7 +24,7 @@ impl Batch {
             reference: reference.to_string(),
             sku: sku.to_string(),
             eta: eta,
-            available_quantity: qty,
+            _purchased_quantity: qty,
             _allocated_lines: HashSet::new(),
         }
     }
@@ -44,7 +44,15 @@ impl Batch {
         }
     }
 
+    pub fn allocated_quantity(&self) -> u32 {
+        self._allocated_lines.iter().map(|line| line.qty).sum()
+    }
+
+    pub fn available_quantity(&self) -> u32 {
+        self._purchased_quantity - self.allocated_quantity()
+    }
+
     pub fn can_allocate(&self, line: &OrderLine) -> bool {
-        self.sku == line.sku && self.available_quantity >= line.qty
+        self.sku == line.sku && self.available_quantity() >= line.qty
     }
 }

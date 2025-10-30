@@ -17,7 +17,7 @@ fn test_allocating_to_a_batch_reduces_the_available_quantity() {
 
     batch.allocate(&line);
 
-    assert_eq!(batch.available_quantity, 18);
+    assert_eq!(batch.available_quantity(), 18);
 }
 
 fn make_batch_and_line(sku: &str, batch_qty: u32, line_qty: u32) -> (Batch, OrderLine) {
@@ -63,5 +63,13 @@ fn test_cannot_allocate_if_skus_do_not_match() {
 fn test_can_only_deallocate_allocated_lines() {
     let (mut batch, unallocated_line) = make_batch_and_line("DECORATIFE-TRINKET", 20, 2);
     batch.deallocate(&unallocated_line);
-    assert!(batch.available_quantity == 20);
+    assert!(batch.available_quantity() == 20);
+}
+
+#[test]
+fn test_allocation_is_idempotent() {
+    let (mut batch, line) = make_batch_and_line("ANGULAR-DESK", 20, 2);
+    batch.allocate(&line);
+    batch.allocate(&line);
+    assert!(batch.available_quantity() == 18);
 }
