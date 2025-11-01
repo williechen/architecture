@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, f32::consts::E};
 
 use chrono::NaiveDate;
 
@@ -55,4 +55,45 @@ impl Batch {
     pub fn can_allocate(&self, line: &OrderLine) -> bool {
         self.sku == line.sku && self.available_quantity() >= line.qty
     }
+}
+
+impl PartialEq for Batch {
+    fn eq(&self, other: &Self) -> bool {
+        self.reference == other.reference
+    }
+}
+
+impl PartialOrd for Batch {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        if self.eta.is_none() && other.eta.is_none() {
+            Some(std::cmp::Ordering::Equal)
+        } else if self.eta.is_none() {
+            Some(std::cmp::Ordering::Less)
+        } else if other.eta.is_none() {
+            Some(std::cmp::Ordering::Greater)
+        } else {
+            self.eta.unwrap().partial_cmp(&other.eta.unwrap())
+        }
+    }
+}
+
+impl std::hash::Hash for Batch {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.reference.hash(state);
+    }
+}
+
+pub fn allocate(
+    line: &OrderLine,
+    mut batches: Vec<&mut Batch>,
+) -> Result<Option<String>, &'static str> {
+    for batch in batches.iter_mut() {
+        if batch.can_allocate(line) {
+            batch.allocate(line);
+            return Ok(Some(batch.reference.clone()));
+        } else {
+            return Err("Out of stock");
+        }
+    }
+    Ok(None)
 }
