@@ -1,4 +1,4 @@
-use architecture::chapters::model::{Batch, OrderLine, allocate};
+use architecture::chapter1::model::{Batch, OrderLine, allocate};
 use chrono::Local;
 
 #[test]
