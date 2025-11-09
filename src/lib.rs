@@ -5,7 +5,7 @@ pub mod configures;
 use crate::configures::application;
 
 pub async fn run_app() {
-    let _a = application::get_config().logger.load();
+    let _logs = application::get_config().logger.load();
     application::get_config().database.get_connection();
 
     tracing::info!(
