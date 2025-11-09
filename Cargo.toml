@@ -9,6 +9,8 @@ chrono = "0.4"
 
 config = { version = "0.15", features = ["toml"] }
 
+lettre = "0.11"
+
 rbs = "4.6"
 rbatis = { version = "4.6", features = ["debug_mode"] }
 rbdc-sqlite = "4.6"
@@ -20,6 +22,11 @@ sha2 = "0.10"
 
 axum = "0.8"
 axum-valid = "0.24"
+
+anyhow = "1.0"
+
+russh = "0.54"
+russh-sftp = "2.1"
 
 tokio = { version = "1.40", features = ["full"] }
 

@@ -6,7 +6,7 @@ use crate::configures::application;
 
 pub async fn run_app() {
     let _logs = application::get_config().logger.load();
-    application::get_config().database.get_connection();
+    let db = application::get_config().database.get_connection().await;
 
     tracing::info!(
         "Starting server at {} in {} mode",

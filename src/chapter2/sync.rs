@@ -1,5 +1,4 @@
 use sha2::{Digest, Sha256};
-use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::io::{BufReader, Read};
@@ -35,15 +34,15 @@ pub fn sync(source: &str, target: &str) {
 }
 
 fn read_paths_and_hashes(dir: &str) -> Vec<(PathBuf, String)> {
-    let mut fileList = Vec::new();
+    let mut file_list = Vec::new();
     for entry in WalkDir::new(dir).into_iter().filter_map(|e| e.ok()) {
         if entry.file_type().is_file() {
             let path = entry.path().to_path_buf();
             let hash = calculate_hash(&path);
-            fileList.push((path, hash));
+            file_list.push((path, hash));
         }
     }
-    fileList
+    file_list
 }
 
 fn calculate_hash(path: &Path) -> String {
