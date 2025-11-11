@@ -1,6 +1,7 @@
 pub mod chapter1;
 pub mod chapter2;
 pub mod configures;
+pub mod sitemap;
 
 use crate::configures::application;
 
@@ -13,4 +14,10 @@ pub async fn run_app() {
         application::get_config().server.address(),
         application::get_config().server.app_env()
     );
+
+    let listenert = tokio::net::TcpListener::bind(application::get_config().server.address())
+        .await
+        .expect("Failed to bind address");
+
+    axum::serve(listenert, sitemap::sitemap()).await.unwrap();
 }
