@@ -17,7 +17,7 @@ pub struct SftpConfig {
 }
 
 impl SftpConfig {
-    pub async fn get_connent(&self) -> Option<SftpSession> {
+    pub async fn get_connection(&self) -> Option<SftpSession> {
         let config = RusshConfig::default();
 
         let mut session = russh::client::connect(
@@ -55,7 +55,7 @@ impl SftpConfig {
 struct Client;
 
 impl client::Handler for Client {
-    type Error = anyhow::Error;
+    type Error = Box<dyn std::error::Error + Send + Sync>;
 
     async fn check_server_key(
         &mut self,

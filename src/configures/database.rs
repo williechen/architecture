@@ -17,6 +17,9 @@ impl DatabaseConfig {
         let conn_str = format!("sqlite://{}.db", self.database.as_deref().unwrap_or("mydb"),);
         let rbatis = RBatis::new();
         rbatis.link(SqliteDriver {}, &conn_str).await.unwrap();
+
+        tracing::info!("Connected to database at {}", conn_str);
+
         rbatis
     }
 }
