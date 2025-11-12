@@ -75,17 +75,17 @@ fn determine_actions(
     for (path, hash) in source_hashes {
         if !target_hashes
             .iter()
-            .any(|(p, h)| p.file_name() == path.file_name())
+            .any(|(p, _h)| p.file_name() == path.file_name())
         {
             // If the file does not exist in the target, copy it
             let sourcepath = Path::new(source).join(path.file_name().unwrap());
             let targetpath = Path::new(target).join(path.file_name().unwrap());
             actions.push(("copy", (Some(sourcepath), Some(targetpath))));
-        } else if target_hashes.iter().any(|(p, h)| h == hash) {
+        } else if target_hashes.iter().any(|(_p, h)| h == hash) {
             // If the file exists in the target but with a different name, move it
             let target_path = target_hashes
                 .iter()
-                .find(|(p, h)| h == hash)
+                .find(|(_p, h)| h == hash)
                 .unwrap()
                 .0
                 .clone();
@@ -96,11 +96,11 @@ fn determine_actions(
         }
     }
 
-    for (path, hash) in target_hashes {
+    for (path, _hash) in target_hashes {
         // If the file does not exist in the source, delete it
         if !source_hashes
             .iter()
-            .any(|(p, h)| p.file_name() == path.file_name())
+            .any(|(p, _h)| p.file_name() == path.file_name())
         {
             actions.push(("delete", (None, Some(path.clone()))));
         }

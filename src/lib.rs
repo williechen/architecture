@@ -21,5 +21,5 @@ pub async fn run_app() {
         .await
         .expect("Failed to bind address");
 
-    axum::serve(listenert, sitemap::sitemap(db)).await.unwrap();
+    axum::serve(listenert, sitemaps::sitemap(db)).await.unwrap();
 }

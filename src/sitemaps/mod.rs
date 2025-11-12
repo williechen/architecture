@@ -1,5 +1,8 @@
+use axum::http::{StatusCode, Uri};
 use axum::{Router, routing::get};
-pub fn sitemap(db: Rbatis) -> Router {
+use rbatis::rbatis::RBatis;
+
+pub fn sitemap(db: RBatis) -> Router {
     Router::new()
         .route("/sitemap.xml", get(|| async { "Sitemap XML content" }))
         .fallback(fallback)
