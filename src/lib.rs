@@ -4,6 +4,8 @@ pub mod configures;
 pub mod sitemaps;
 
 use crate::configures::application;
+use lettre::message::SinglePart;
+use lettre::{Message, Transport};
 
 pub async fn run_app() {
     let _logs = application::get_config().logger.load();

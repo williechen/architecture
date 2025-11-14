@@ -17,14 +17,14 @@ log_directory = "logs/"
 file_prefix = "app"
 
 [sftp]
-host = "sftp.example.com"
+host = "localhost"
 port = 22
-user = "sftpuser"
-pswd = "sftppassword"
-root = "/uploads/"
+user = "willie"
+pswd = "Cgwdy2025@2"
+root = "/home/willie/"
 
 [mail]
-smtp_server = "smtp.example.com"
+host = "smtp.gmail.com"
 port = 587
-user = "emailuser"
-pswd = "emailpassword"
+user = "guan.yu456@gmail.com"
+pswd = "ufyi kdrl orew afom"

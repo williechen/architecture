@@ -1,4 +1,4 @@
-use std::{any, sync::Arc};
+use std::sync::Arc;
 
 use russh::{
     ChannelId,
@@ -13,30 +13,29 @@ pub struct SftpConfig {
     pub host: Option<String>,
     pub port: Option<u16>,
     pub user: Option<String>,
-    pub password: Option<String>,
+    pub pswd: Option<String>,
 }
 
 impl SftpConfig {
     pub async fn get_connection(&self) -> Option<SftpSession> {
         let config = RusshConfig::default();
+        let default_host = "localhost".to_string();
+        let host = self.host.as_ref().unwrap_or(&default_host);
+        let port = self.port.unwrap_or(22);
 
-        let mut session = russh::client::connect(
-            Arc::new(config),
-            format!(
-                "{}:{}",
-                self.host.as_ref().unwrap_or(&"localhost".to_string()),
-                self.port.unwrap_or(22),
-            ),
-            Client {},
-        )
-        .await
-        .unwrap();
+        let default_user = "root".to_string();
+        let user = self.user.as_ref().unwrap_or(&default_user);
+
+        let default_pswd = "password".to_string();
+        let pswd = self.pswd.as_ref().unwrap_or(&default_pswd);
+
+        let mut session =
+            russh::client::connect(Arc::new(config), format!("{0}:{1}", host, port,), Client {})
+                .await
+                .unwrap();
 
         if session
-            .authenticate_password(
-                self.user.as_ref().unwrap_or(&"root".to_string()),
-                self.password.as_ref().unwrap_or(&"password".to_string()),
-            )
+            .authenticate_password(user, pswd)
             .await
             .unwrap()
             .success()
@@ -55,7 +54,7 @@ impl SftpConfig {
 struct Client;
 
 impl client::Handler for Client {
-    type Error = Box<dyn std::error::Error + Send + Sync>;
+    type Error = russh::Error;
 
     async fn check_server_key(
         &mut self,

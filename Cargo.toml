@@ -30,6 +30,8 @@ axum-valid = "0.24"
 russh = "0.54"
 russh-sftp = "2.1.1"
 
+thiserror = "2.0"
+
 tokio = { version = "1.40", features = ["full"] }
 
 tower-http = "0.6"

@@ -5,6 +5,8 @@ use serde::Deserialize;
 use crate::configures::database::DatabaseConfig;
 use crate::configures::logger::LoggerConfig;
 use crate::configures::server::ServerConfig;
+use crate::configures::sftppool::SftpConfig;
+use crate::configures::smtppool::SmtpConfig;
 
 static CONFIG_FILE: LazyLock<AppConfig> = LazyLock::new(|| AppConfig::load());
 
@@ -13,6 +15,8 @@ pub struct AppConfig {
     pub server: ServerConfig,
     pub database: DatabaseConfig,
     pub logger: LoggerConfig,
+    pub sftp: SftpConfig,
+    pub mail: SmtpConfig,
 }
 
 impl AppConfig {
