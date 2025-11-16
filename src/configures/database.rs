@@ -1,6 +1,8 @@
-use rbatis::RBatis;
+use rbatis::{RBatis, table_sync};
 use rbdc_sqlite::driver::SqliteDriver;
 use serde::{Deserialize, Serialize};
+
+use crate::entities::{ssm_codemap, ssm_config, uam_user};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DatabaseConfig {
@@ -21,5 +23,38 @@ impl DatabaseConfig {
         tracing::info!("Connected to database at {}", conn_str);
 
         rbatis
+    }
+
+    pub async fn sync_schema(db: &RBatis) {
+        let mapper = &table_sync::SqliteTableMapper {} as &dyn table_sync::ColumnMapper;
+
+        RBatis::sync(
+            db,
+            mapper, // Assuming UamUser implements ColumnMapper
+            &uam_user::UamUser::default(),
+            "uam_user",
+        )
+        .await
+        .unwrap();
+
+        RBatis::sync(
+            db,
+            mapper, // Assuming UamUser implements ColumnMapper
+            &ssm_codemap::SsmCodemap::default(),
+            "ssm_codemap",
+        )
+        .await
+        .unwrap();
+
+        RBatis::sync(
+            db,
+            mapper, // Assuming UamUser implements ColumnMapper
+            &ssm_config::SsmConfig::default(),
+            "ssm_config",
+        )
+        .await
+        .unwrap();
+
+        tracing::info!("Database schema synchronized");
     }
 }

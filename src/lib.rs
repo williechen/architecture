@@ -1,12 +1,16 @@
 pub mod chapter1;
 pub mod chapter2;
 pub mod configures;
+pub mod entities;
 pub mod sitemaps;
 pub mod tokens;
+
+use configures::database::DatabaseConfig;
 
 pub async fn run_app() {
     let _logs = configures::get_config().logger.load();
     let db = configures::get_config().database.get_connection().await;
+    DatabaseConfig::sync_schema(&db).await;
 
     tracing::info!(
         "Starting server at {} in {} mode",

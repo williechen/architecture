@@ -1,4 +1,4 @@
-mod database;
+pub mod database;
 mod logger;
 mod secretkey;
 mod server;
