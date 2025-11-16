@@ -8,7 +8,7 @@ pub struct WebResponse<T> {
     pub data: Option<T>,
 }
 
-impl IntoResponse for WebResponse<T>
+impl<T> IntoResponse for WebResponse<T>
 where
     T: serde::Serialize,
 {
@@ -18,7 +18,7 @@ where
         });
         axum::response::Response::builder()
             .header(axum::http::header::CONTENT_TYPE, "text/plain")
-            .body(axum::body::boxed(axum::body::Full::from(body)))
+            .body(axum::body::Body::from(body))
             .unwrap()
     }
 }
