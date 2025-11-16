@@ -3,21 +3,19 @@ pub mod chapter2;
 pub mod configures;
 pub mod sitemaps;
 
-use crate::configures::application;
-
 pub async fn run_app() {
-    let _logs = application::get_config().logger.load();
-    let db = application::get_config().database.get_connection().await;
+    let _logs = configures::get_config().logger.load();
+    let db = configures::get_config().database.get_connection().await;
 
     tracing::info!(
         "Starting server at {} in {} mode",
-        application::get_config().server.address(),
-        application::get_config().server.app_env()
+        configures::get_config().server.address(),
+        configures::get_config().server.app_env()
     );
 
     tracing::info!("Starting sitemap service...");
 
-    let listenert = tokio::net::TcpListener::bind(application::get_config().server.address())
+    let listenert = tokio::net::TcpListener::bind(configures::get_config().server.address())
         .await
         .expect("Failed to bind address");
 
