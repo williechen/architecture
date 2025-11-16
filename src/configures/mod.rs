@@ -1,8 +1,9 @@
-pub mod database;
-pub mod logger;
-pub mod server;
-pub mod sftppool;
-pub mod smtppool;
+mod database;
+mod logger;
+mod secretkey;
+mod server;
+mod sftppool;
+mod smtppool;
 
 use std::sync::LazyLock;
 
@@ -10,6 +11,7 @@ use serde::Deserialize;
 
 use crate::configures::database::DatabaseConfig;
 use crate::configures::logger::LoggerConfig;
+use crate::configures::secretkey::SecretConfig;
 use crate::configures::server::ServerConfig;
 use crate::configures::sftppool::SftpConfig;
 use crate::configures::smtppool::SmtpConfig;
@@ -23,6 +25,7 @@ pub struct AppConfig {
     pub logger: LoggerConfig,
     pub sftp: SftpConfig,
     pub mail: SmtpConfig,
+    pub secret: SecretConfig,
 }
 
 impl AppConfig {

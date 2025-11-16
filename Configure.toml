@@ -28,3 +28,6 @@ host = "smtp.gmail.com"
 port = 587
 user = "guan.yu456@gmail.com"
 pswd = "ufyi kdrl orew afom"
+
+[secret]
+jwt_secret = "your_jwt_secret_here"

@@ -3,6 +3,8 @@ pub mod api_response;
 pub mod web_errors;
 pub mod web_response;
 
+use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
 use axum::http::{Request, StatusCode, Uri};
@@ -16,6 +18,25 @@ use tower_http::trace::{DefaultOnResponse, TraceLayer};
 #[derive(Debug, Clone)]
 pub struct AppState {
     pub db: RBatis,
+    pub codemap: Arc<RwLock<HashMap<String, HashMap<String, String>>>>,
+    pub config: Arc<RwLock<HashMap<String, HashMap<String, String>>>>,
+}
+
+impl AppState {
+    pub fn new(db: RBatis) -> Self {
+        Self {
+            db,
+            codemap: Arc::new(RwLock::new(HashMap::new())),
+            config: Arc::new(RwLock::new(HashMap::new())),
+        }
+    }
+
+    pub fn get_codemap(&self, db: RBatis) -> Arc<RwLock<HashMap<String, HashMap<String, String>>>> {
+        self.codemap.clone()
+    }
+    pub fn get_config(&self, db: RBatis) -> Arc<RwLock<HashMap<String, HashMap<String, String>>>> {
+        self.config.clone()
+    }
 }
 
 pub fn sitemap(db: RBatis) -> Router {
@@ -54,7 +75,7 @@ pub fn sitemap(db: RBatis) -> Router {
         .layer(cors)
         .layer(compression)
         .fallback(fallback)
-        .with_state(AppState { db })
+        .with_state(AppState::new(db))
 }
 
 async fn fallback(uri: Uri) -> (StatusCode, String) {

@@ -2,6 +2,7 @@ pub mod chapter1;
 pub mod chapter2;
 pub mod configures;
 pub mod sitemaps;
+pub mod tokens;
 
 pub async fn run_app() {
     let _logs = configures::get_config().logger.load();
