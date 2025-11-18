@@ -7,7 +7,8 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
-use axum::http::{Request, StatusCode, Uri};
+use axum::http::{Request, Uri};
+use axum::response::IntoResponse;
 use axum::{Router, routing::get};
 use rbatis::rbatis::RBatis;
 use tower_http::compression::CompressionLayer;
@@ -78,6 +79,6 @@ pub fn sitemap(db: RBatis) -> Router {
         .with_state(AppState::new(db))
 }
 
-async fn fallback(uri: Uri) -> (StatusCode, String) {
-    (StatusCode::NOT_FOUND, format!("No route for {uri}"))
+async fn fallback(uri: Uri) -> impl IntoResponse {
+    web_errors::WebError::NotFound(format!("No route for {}", uri)).into_response()
 }

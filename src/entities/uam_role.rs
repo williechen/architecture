@@ -1,24 +1,22 @@
 use rbatis::{crud, rbdc::DateTime};
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-pub struct UamUser {
+pub struct UamRole {
     pub id: String,
-    pub user_name: String,
-    pub pswd_hash: String,
-    pub email: String,
+    pub code: String,
+    pub name: String,
     pub created_at: DateTime,
     pub updated_at: DateTime,
 }
 
-crud!(UamUser {}, "uam_user");
+crud!(UamRole {}, "uam_role");
 
-impl Default for UamUser {
+impl Default for UamRole {
     fn default() -> Self {
-        UamUser {
+        UamRole {
             id: "".to_string(),
-            user_name: "".to_string(),
-            pswd_hash: "".to_string(),
-            email: "".to_string(),
+            code: "".to_string(),
+            name: "".to_string(),
             created_at: DateTime::now(),
             updated_at: DateTime::now(),
         }

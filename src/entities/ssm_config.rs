@@ -16,7 +16,7 @@ crud!(SsmConfig {}, "ssm_config");
 impl Default for SsmConfig {
     fn default() -> Self {
         SsmConfig {
-            id: xid::new().to_string(),
+            id: "".to_string(),
             category: "".to_string(),
             code: "".to_string(),
             name: "".to_string(),

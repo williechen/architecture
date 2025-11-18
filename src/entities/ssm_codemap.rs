@@ -16,7 +16,7 @@ crud!(SsmCodemap {}, "ssm_codemap");
 impl Default for SsmCodemap {
     fn default() -> Self {
         SsmCodemap {
-            id: xid::new().to_string(),
+            id: "".to_string(),
             category: "".to_string(),
             code: "".to_string(),
             name: "".to_string(),
