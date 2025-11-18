@@ -1,8 +1,5 @@
 use askama::Template;
-use axum::{
-    handler::Handler,
-    response::{Html, IntoResponse},
-};
+use axum::response::{Html, IntoResponse};
 
 #[derive(Debug, thiserror::Error)]
 pub enum WebError {

@@ -12,6 +12,10 @@ pub async fn run_app() {
     let db = configures::get_config().database.get_connection().await;
     DatabaseConfig::sync_schema(&db).await;
 
+    let listenert = tokio::net::TcpListener::bind(configures::get_config().server.address())
+        .await
+        .expect("Failed to bind address");
+
     tracing::info!(
         "Starting server at {} in {} mode",
         configures::get_config().server.address(),
@@ -20,9 +24,7 @@ pub async fn run_app() {
 
     tracing::info!("Starting sitemap service...");
 
-    let listenert = tokio::net::TcpListener::bind(configures::get_config().server.address())
+    axum::serve(listenert, sitemaps::sitemap(db).await)
         .await
-        .expect("Failed to bind address");
-
-    axum::serve(listenert, sitemaps::sitemap(db)).await.unwrap();
+        .unwrap();
 }

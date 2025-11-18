@@ -1,11 +1,11 @@
-pub mod api_errors;
-pub mod api_response;
-pub mod web_errors;
-pub mod web_response;
+mod api_errors;
+mod app_state;
+mod web_errors;
 
-use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
-use std::time::Duration;
+use axum::Json;
+use axum::extract::State;
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
 use axum::http::{Request, Uri};
 use axum::response::IntoResponse;
@@ -16,31 +16,17 @@ use tower_http::cors::CorsLayer;
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::{DefaultOnResponse, TraceLayer};
 
-#[derive(Debug, Clone)]
-pub struct AppState {
-    pub db: RBatis,
-    pub codemap: Arc<RwLock<HashMap<String, HashMap<String, String>>>>,
-    pub config: Arc<RwLock<HashMap<String, HashMap<String, String>>>>,
-}
+use crate::entities::ssm_codemap::SsmCodemap;
+use crate::sitemaps::app_state::AppState;
 
-impl AppState {
-    pub fn new(db: RBatis) -> Self {
-        Self {
-            db,
-            codemap: Arc::new(RwLock::new(HashMap::new())),
-            config: Arc::new(RwLock::new(HashMap::new())),
-        }
-    }
+pub async fn sitemap(db: RBatis) -> Router {
+    let mut app_state = AppState {
+        db: db.clone(),
+        codemap: Arc::new(RwLock::new(app_state::load_codemap(&db).await)),
+        config: Arc::new(RwLock::new(app_state::load_config(&db).await)),
+    };
+    app_state::load(&mut app_state).await;
 
-    pub fn get_codemap(&self, db: RBatis) -> Arc<RwLock<HashMap<String, HashMap<String, String>>>> {
-        self.codemap.clone()
-    }
-    pub fn get_config(&self, db: RBatis) -> Arc<RwLock<HashMap<String, HashMap<String, String>>>> {
-        self.config.clone()
-    }
-}
-
-pub fn sitemap(db: RBatis) -> Router {
     let compression = CompressionLayer::new();
 
     let cors = CorsLayer::new()
@@ -48,7 +34,7 @@ pub fn sitemap(db: RBatis) -> Router {
         .allow_methods(tower_http::cors::Any)
         .allow_headers(tower_http::cors::Any)
         .allow_credentials(false)
-        .max_age(Duration::from_secs(3600 * 12));
+        .max_age(std::time::Duration::from_secs(3600 * 12));
 
     let timeout = TimeoutLayer::new(std::time::Duration::from_secs(10));
 
@@ -70,15 +56,21 @@ pub fn sitemap(db: RBatis) -> Router {
         .on_response(DefaultOnResponse::new().level(tracing::Level::INFO));
 
     Router::new()
-        .route("/sitemap.xml", get(|| async { "Sitemap XML content" }))
+        .route("/cache", get(get_cache))
         .layer(trace)
         .layer(timeout)
         .layer(cors)
         .layer(compression)
         .fallback(fallback)
-        .with_state(AppState::new(db))
+        .with_state(app_state)
 }
 
 async fn fallback(uri: Uri) -> impl IntoResponse {
     web_errors::WebError::NotFound(format!("No route for {}", uri)).into_response()
+}
+
+async fn get_cache(State(state): State<AppState>) -> Json<String> {
+    let data = state.codemap.read().await;
+    let json_str = serde_json::to_string(&*data).unwrap_or_else(|_| "{}".to_string());
+    Json(json_str)
 }
