@@ -16,7 +16,6 @@ use tower_http::cors::CorsLayer;
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::{DefaultOnResponse, TraceLayer};
 
-use crate::entities::ssm_codemap::SsmCodemap;
 use crate::sitemaps::app_state::AppState;
 
 pub async fn sitemap(db: RBatis) -> Router {

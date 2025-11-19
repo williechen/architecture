@@ -21,7 +21,7 @@ pub async fn load(state: &mut AppState) {
     let codemap = state.codemap.clone();
     let config = state.config.clone();
 
-    let job = Job::new_async("0 */1 * * * *", move |_id, _lock| {
+    let job = Job::new_async("0 */15 * * * *", move |_id, _lock| {
         let db_cache = db.clone();
         let codemap_cache = codemap.clone();
         let config_cache = config.clone();
