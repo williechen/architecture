@@ -2,6 +2,7 @@ pub mod chapter1;
 pub mod chapter2;
 pub mod configures;
 pub mod entities;
+pub mod logic;
 pub mod sitemaps;
 pub mod tokens;
 

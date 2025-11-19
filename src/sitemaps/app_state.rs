@@ -14,7 +14,7 @@ pub struct AppState {
     pub config: Arc<RwLock<HashMap<String, HashMap<String, String>>>>,
 }
 
-pub async fn load(state: &mut AppState) {
+pub async fn load(state: AppState) {
     let scheduler = JobScheduler::new().await.unwrap();
 
     let db = state.db.clone();

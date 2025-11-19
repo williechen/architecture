@@ -2,7 +2,6 @@ pub mod database;
 mod logger;
 mod secretkey;
 mod server;
-mod sftppool;
 mod smtppool;
 
 use std::sync::LazyLock;
@@ -22,7 +21,6 @@ pub struct AppConfig {
     pub server: ServerConfig,
     pub database: DatabaseConfig,
     pub logger: LoggerConfig,
-    pub sftp: SmtpConfig,
     pub mail: SmtpConfig,
     pub secret: SecretConfig,
 }

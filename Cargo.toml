@@ -32,8 +32,8 @@ askama = { version = "0.14", features = ["full"] }
 axum = "0.8"
 axum-valid = "0.24"
 
-russh = "0.54"
-russh-sftp = "2.1.1"
+#russh = "0.54"
+#russh-sftp = "2.1.1"
 
 thiserror = "2.0"
 
