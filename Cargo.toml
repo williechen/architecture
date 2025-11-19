@@ -9,6 +9,9 @@ chrono = { version = "0.4", features = ["serde"] }
 
 config = { version = "0.15", features = ["toml"] }
 
+fast_log = "1.7"
+log = "0.4"
+
 jsonwebtoken = { version = "10.2", features = ["rust_crypto"] }
 
 lettre = "0.11"
@@ -29,8 +32,8 @@ askama = { version = "0.14", features = ["full"] }
 axum = "0.8"
 axum-valid = "0.24"
 
-#russh = "0.54"
-#russh-sftp = "2.1.1"
+russh = "0.54"
+russh-sftp = "2.1.1"
 
 thiserror = "2.0"
 
