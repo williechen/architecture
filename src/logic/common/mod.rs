@@ -15,7 +15,7 @@ async fn get_cache(State(state): State<AppState>) -> Json<String> {
     let codemap = SsmCodemap {
         id: xid::new().to_string(),
         category: "example".to_string(),
-        code: "000".to_string(),
+        code: "001".to_string(),
         name: "Example Code".to_string(),
         description: "This is an example code entry.".to_string(),
         created_at: DateTime::now(),

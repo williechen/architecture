@@ -1,6 +1,6 @@
-mod api_errors;
+pub mod api_errors;
 pub mod app_state;
-mod web_errors;
+pub mod web_errors;
 
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -11,6 +11,7 @@ use axum::response::IntoResponse;
 use rbatis::rbatis::RBatis;
 use tower_http::compression::CompressionLayer;
 use tower_http::cors::CorsLayer;
+use tower_http::services::ServeDir;
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::{DefaultOnResponse, TraceLayer};
 
@@ -55,6 +56,8 @@ pub async fn sitemap(db: RBatis) -> Router {
 
     Router::new()
         .merge(logic::common::common_routes().await)
+        .merge(logic::logic_routes().await)
+        .nest_service("/", ServeDir::new("static/"))
         .layer(trace)
         .layer(timeout)
         .layer(cors)

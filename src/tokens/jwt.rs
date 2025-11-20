@@ -36,6 +36,7 @@ impl Default for JwtConfig {
     }
 }
 
+#[derive(Clone)]
 pub struct JWT {
     encode_secret: EncodingKey,
     decode_secret: DecodingKey,
@@ -89,7 +90,6 @@ impl JWT {
         T: DeserializeOwned,
     {
         let token_data: TokenData<Claims> = decode(token, &self.decode_secret, &self.validation)?;
-
         let data: T = serde_json::from_str(&token_data.claims.sub)
             .map_err(|_| errors::Error::from(errors::ErrorKind::InvalidToken))?;
 
