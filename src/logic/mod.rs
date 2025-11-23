@@ -1,3 +1,4 @@
+mod authenticator;
 pub mod common;
 
 use askama::Template;

@@ -46,6 +46,9 @@ tracing = "0.1"
 tracing-appender = "0.2"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
+utoipa = { version = "5.4", features = ["axum_extras"] }
+utoipa-swagger-ui = "9.0"
+
 xid = "1.1"
 validator = { version = "0.20", features = ["derive"] }
 

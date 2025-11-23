@@ -57,7 +57,7 @@ pub async fn sitemap(db: RBatis) -> Router {
     Router::new()
         .merge(logic::common::common_routes().await)
         .merge(logic::logic_routes().await)
-        .nest_service("/", ServeDir::new("static/"))
+        .nest_service("/plugins", ServeDir::new("static/"))
         .layer(trace)
         .layer(timeout)
         .layer(cors)
