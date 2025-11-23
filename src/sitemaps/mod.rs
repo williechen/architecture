@@ -1,6 +1,4 @@
-pub mod api_errors;
 pub mod app_state;
-pub mod web_errors;
 
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -17,6 +15,7 @@ use tower_http::trace::{DefaultOnResponse, TraceLayer};
 
 use crate::logic;
 use crate::sitemaps::app_state::AppState;
+use crate::web_base::web_errors;
 
 pub async fn sitemap(db: RBatis) -> Router {
     let app_state = AppState {

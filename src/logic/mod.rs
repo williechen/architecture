@@ -7,7 +7,7 @@ use axum::response::Html;
 use axum::routing::get;
 
 use crate::sitemaps::app_state::AppState;
-use crate::sitemaps::web_errors::WebError;
+use crate::web_base::web_errors::WebError;
 
 pub async fn logic_routes() -> Router<AppState> {
     Router::new()
