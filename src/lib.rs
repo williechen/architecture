@@ -1,10 +1,12 @@
-pub mod chapter1;
-pub mod chapter2;
-pub mod configures;
-pub mod entities;
-pub mod logic;
-pub mod sitemaps;
-pub mod tokens;
+mod api_base;
+mod chapter1;
+mod chapter2;
+mod configures;
+mod entities;
+mod logic;
+mod sitemaps;
+mod tokens;
+mod web_base;
 
 use configures::database::DatabaseConfig;
 

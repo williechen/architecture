@@ -1,21 +1,13 @@
 use axum::response::IntoResponse;
-use thiserror::Error;
 
-#[derive(Debug, Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum ApiError {
+    #[error("Not Found: {0}")]
     NotFound(String),
+    #[error("Unauthorized: {0}")]
     Unauthorized(String),
+    #[error("Internal Server Error: {0}")]
     InternalServerError(String),
-}
-
-impl std::fmt::Display for ApiError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ApiError::NotFound(msg) => write!(f, "Not Found: {}", msg),
-            ApiError::Unauthorized(msg) => write!(f, "Unauthorized: {}", msg),
-            ApiError::InternalServerError(msg) => write!(f, "Internal Server Error: {}", msg),
-        }
-    }
 }
 
 impl IntoResponse for ApiError {
