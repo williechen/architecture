@@ -1,4 +1,5 @@
 pub mod app_state;
+mod csp_layer;
 
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -34,6 +35,11 @@ pub async fn sitemap(db: RBatis) -> Router {
         .allow_credentials(false)
         .max_age(std::time::Duration::from_secs(3600 * 12));
 
+    let csp_layer = csp_layer::ContentSecurityPolicyLayer::new()
+        .set_default_src("'self'")
+        .set_script_src("'self'")
+        .set_style_src("'self'");
+
     let timeout = TimeoutLayer::new(std::time::Duration::from_secs(10));
 
     let trace = TraceLayer::new_for_http()
@@ -59,6 +65,7 @@ pub async fn sitemap(db: RBatis) -> Router {
         .nest_service("/plugins", ServeDir::new("static/"))
         .layer(trace)
         .layer(timeout)
+        .layer(csp_layer)
         .layer(cors)
         .layer(compression)
         .fallback(fallback)

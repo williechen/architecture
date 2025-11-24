@@ -20,14 +20,14 @@ file_prefix = "app"
 host = "localhost"
 port = 22
 user = "willie"
-pswd = "Cgwdy2025@2"
+pswd = ""
 root = "/home/willie/"
 
 [mail]
 host = "smtp.gmail.com"
 port = 587
 user = "guan.yu456@gmail.com"
-pswd = "ufyi kdrl orew afom"
+pswd = ""
 
 [secret]
 jwt_secret = "your_jwt_secret_here"

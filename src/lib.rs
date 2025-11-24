@@ -5,7 +5,7 @@ mod configures;
 pub mod entities;
 pub mod logic;
 mod sitemaps;
-mod tokens;
+pub mod tokens;
 mod web_base;
 
 use configures::database::DatabaseConfig;
