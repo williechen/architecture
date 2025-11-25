@@ -1,6 +1,6 @@
 mod authenticator;
 pub mod common;
-pub mod security_form;
+pub mod security_from_req;
 
 use askama::Template;
 use axum::response::Html;
