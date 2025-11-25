@@ -91,6 +91,7 @@ dependencies = [
  "askama",
  "axum",
  "axum-valid",
+ "base64",
  "chrono",
  "config",
  "fast_log",

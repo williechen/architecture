@@ -1,10 +1,11 @@
 mod authenticator;
 pub mod common;
+pub mod security_form;
 
 use askama::Template;
-use axum::Router;
 use axum::response::Html;
 use axum::routing::get;
+use axum::{Form, Json, Router};
 
 use crate::sitemaps::app_state::AppState;
 use crate::web_base::web_errors::WebError;
@@ -22,6 +23,11 @@ pub async fn home() -> Result<Html<String>, WebError> {
 
     let template = HomeTemplate {};
     Ok(Html(template.render()?))
+}
+
+pub struct SecurityData {
+    pub username: String,
+    pub password: String,
 }
 
 pub async fn login() -> Result<Html<String>, WebError> {
