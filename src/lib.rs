@@ -1,7 +1,7 @@
 mod api_base;
 pub mod chapter1;
 pub mod chapter2;
-mod configures;
+pub mod configures;
 pub mod entities;
 pub mod logic;
 mod sitemaps;

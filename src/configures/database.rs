@@ -2,7 +2,7 @@ use rbatis::{RBatis, table_sync};
 use rbdc_sqlite::driver::SqliteDriver;
 use serde::{Deserialize, Serialize};
 
-use crate::entities::{ssm_codemap, ssm_config, uam_user};
+use crate::entities::{batches, order_lines};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DatabaseConfig {
@@ -31,8 +31,8 @@ impl DatabaseConfig {
         RBatis::sync(
             db,
             mapper, // Assuming UamUser implements ColumnMapper
-            &uam_user::UamUser::default(),
-            "uam_user",
+            &batches::Batch::default(),
+            "batches",
         )
         .await
         .unwrap();
@@ -40,17 +40,8 @@ impl DatabaseConfig {
         RBatis::sync(
             db,
             mapper, // Assuming UamUser implements ColumnMapper
-            &ssm_codemap::SsmCodemap::default(),
-            "ssm_codemap",
-        )
-        .await
-        .unwrap();
-
-        RBatis::sync(
-            db,
-            mapper, // Assuming UamUser implements ColumnMapper
-            &ssm_config::SsmConfig::default(),
-            "ssm_config",
+            &order_lines::OrderLine::default(),
+            "order_lines",
         )
         .await
         .unwrap();
