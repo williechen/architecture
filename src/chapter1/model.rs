@@ -4,7 +4,7 @@ use chrono::NaiveDate;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct OrderLine {
-    pub orderid: String,
+    pub order_id: String,
     pub sku: String,
     pub qty: u32,
 }

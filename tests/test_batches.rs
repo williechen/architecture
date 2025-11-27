@@ -10,7 +10,7 @@ fn test_allocating_to_a_batch_reduces_the_available_quantity() {
         Some(Local::now().date_naive()),
     );
     let line = OrderLine {
-        orderid: "order-123".to_string(),
+        order_id: "order-123".to_string(),
         sku: "SMALL-TABLE".to_string(),
         qty: 2,
     };
@@ -23,7 +23,7 @@ fn test_allocating_to_a_batch_reduces_the_available_quantity() {
 fn make_batch_and_line(sku: &str, batch_qty: u32, line_qty: u32) -> (Batch, OrderLine) {
     let batch = Batch::new("batch-001", sku, batch_qty, Some(Local::now().date_naive()));
     let line = OrderLine {
-        orderid: "order-123".to_string(),
+        order_id: "order-123".to_string(),
         sku: sku.to_string(),
         qty: line_qty,
     };
@@ -52,7 +52,7 @@ fn test_can_allocate_if_available_equal_to_required() {
 fn test_cannot_allocate_if_skus_do_not_match() {
     let batch = Batch::new("batch-001", "UNCOMFORTABLE-CHAIR", 100, None);
     let line = OrderLine {
-        orderid: "order-123".to_string(),
+        order_id: "order-123".to_string(),
         sku: "EXPENSIVE-TOASTER".to_string(),
         qty: 10,
     };
@@ -84,7 +84,7 @@ fn test_prefers_current_stock_batches_to_shipments() {
         Some(Local::now().date_naive()),
     );
     let line = OrderLine {
-        orderid: "oref".to_string(),
+        order_id: "oref".to_string(),
         sku: "RETRO-CLOCK".to_string(),
         qty: 10,
     };
@@ -119,7 +119,7 @@ fn test_prefers_earlier_batches() {
         Some(Local::now().date_naive()),
     );
     let line = OrderLine {
-        orderid: "order1".to_string(),
+        order_id: "order1".to_string(),
         sku: "MINIMALIST-SPOON".to_string(),
         qty: 10,
     };
@@ -144,7 +144,7 @@ fn test_returns_allocated_batch_reference() {
         Some(Local::now().date_naive()),
     );
     let line = OrderLine {
-        orderid: "oref".to_string(),
+        order_id: "oref".to_string(),
         sku: "HIGHBROW-POSTER".to_string(),
         qty: 10,
     };
@@ -158,7 +158,7 @@ fn test_returns_allocated_batch_reference() {
 fn test_raises_out_of_stock_exception_if_cannot_allocate() {
     let mut batch = Batch::new("batch1", "SMALL-FORK", 10, None);
     let line = OrderLine {
-        orderid: "order1".to_string(),
+        order_id: "order1".to_string(),
         sku: "SMALL-FORK".to_string(),
         qty: 10,
     };
@@ -166,7 +166,7 @@ fn test_raises_out_of_stock_exception_if_cannot_allocate() {
     allocate(&line, vec![&mut batch]).unwrap();
 
     let line = OrderLine {
-        orderid: "order2".to_string(),
+        order_id: "order2".to_string(),
         sku: "SMALL-FORK".to_string(),
         qty: 1,
     };
