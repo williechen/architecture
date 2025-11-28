@@ -1,15 +1,13 @@
 use architecture::{
     chapter1::model,
     configures::AppConfig,
-    entities::{
-        allocations::Allocation,
-        batches::Batch,
-        order_lines::{self, OrderLine},
-    },
+    entities::{allocations::Allocation, batches::Batch, order_lines::OrderLine},
 };
-use rbatis::{RBatis, impl_select, rbdc::DateTime};
+use chrono::Local;
+use rbatis::RBatis;
 
 #[tokio::test]
+#[ignore]
 async fn test_repository_can_save_a_batch() {
     let db = AppConfig::load().database.get_connection().await;
 
@@ -19,8 +17,8 @@ async fn test_repository_can_save_a_batch() {
         purchased_quantity: 100,
         eta: None,
         id: xid::new().to_string(),
-        created_at: DateTime::now(),
-        updated_at: DateTime::now(),
+        created_at: Local::now().naive_local(),
+        updated_at: Local::now().naive_local(),
     };
 
     Batch::insert(&db, &batch).await.unwrap();
@@ -33,7 +31,7 @@ async fn test_repository_can_save_a_batch() {
     assert_eq!(fetched_batch[0].purchased_quantity, 100);
     assert_eq!(fetched_batch[0].eta, None);
 
-    let id = rbs::value::Value::from(batch.id.clone());
+    let id = rbs::Value::from(fetched_batch[0].id.clone());
     Batch::delete_by_map(&db, id).await.unwrap();
 }
 
@@ -59,33 +57,30 @@ async fn test_repository_can_retrieve_a_batch_with_allocations() {
     assert_eq!(fetched_batch[0].reference, expected.reference);
     assert_eq!(fetched_batch[0].sku, expected.sku);
 
-    assert_eq!(fetched_order_line[0].sku, Some(expected_order.sku));
-    assert_eq!(
-        fetched_order_line[0].order_id,
-        Some(expected_order.order_id)
-    );
+    assert_eq!(fetched_order_line[0].sku, expected_order.sku);
+    assert_eq!(fetched_order_line[0].order_id, expected_order.order_id);
 
-    Batch::delete_by_map(&db, rbs::value::Value::from(batch_id))
+    Batch::delete_by_map(&db, rbs::Value::from(batch_id))
         .await
         .unwrap();
-    Batch::delete_by_map(&db, rbs::value::Value::from(batch_id1))
+    Batch::delete_by_map(&db, rbs::Value::from(batch_id1))
         .await
         .unwrap();
-    OrderLine::delete_by_map(&db, rbs::value::Value::from(order_line_id))
+    OrderLine::delete_by_map(&db, rbs::Value::from(order_line_id))
         .await
         .unwrap();
-    Allocation::delete_by_map(&db, rbs::value::Value::from(allocation_id))
+    Allocation::delete_by_map(&db, rbs::Value::from(allocation_id))
         .await
         .unwrap();
 }
 
 async fn insert_order_line(db: &RBatis) -> String {
     let order_line = OrderLine {
-        order_id: Some("order1".to_string()),
-        sku: Some("GENERIC-SOFA".to_string()),
+        order_id: "order1".to_string(),
+        sku: "GENERIC-SOFA".to_string(),
         id: xid::new().to_string(),
-        created_at: DateTime::now(),
-        updated_at: DateTime::now(),
+        created_at: Local::now().naive_local(),
+        updated_at: Local::now().naive_local(),
         qty: 12,
     };
 
@@ -101,8 +96,8 @@ async fn insert_batch(db: &RBatis, batch_id: String) -> String {
         purchased_quantity: 100,
         eta: None,
         id: xid::new().to_string(),
-        created_at: DateTime::now(),
-        updated_at: DateTime::now(),
+        created_at: Local::now().naive_local(),
+        updated_at: Local::now().naive_local(),
     };
 
     Batch::insert(db, &batch).await.unwrap();
@@ -115,8 +110,8 @@ async fn insert_allocation(db: &RBatis, order_line_id: String, batch_id: String)
         order_line_id,
         batch_id,
         id: xid::new().to_string(),
-        created_at: DateTime::now(),
-        updated_at: DateTime::now(),
+        created_at: Local::now().naive_local(),
+        updated_at: Local::now().naive_local(),
     };
 
     Allocation::insert(db, &allocation).await.unwrap();

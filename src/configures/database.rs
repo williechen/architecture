@@ -2,7 +2,7 @@ use rbatis::{RBatis, table_sync};
 use rbdc_sqlite::driver::SqliteDriver;
 use serde::{Deserialize, Serialize};
 
-use crate::entities::{batches, order_lines};
+use crate::entities::{allocations, batches, order_lines};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DatabaseConfig {
@@ -42,6 +42,15 @@ impl DatabaseConfig {
             mapper, // Assuming UamUser implements ColumnMapper
             &order_lines::OrderLine::default(),
             "order_lines",
+        )
+        .await
+        .unwrap();
+
+        RBatis::sync(
+            db,
+            mapper, // Assuming UamUser implements ColumnMapper
+            &allocations::Allocation::default(),
+            "allocations",
         )
         .await
         .unwrap();

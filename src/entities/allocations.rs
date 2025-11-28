@@ -1,13 +1,14 @@
+use chrono::{Local, NaiveDateTime};
 use rbatis::crud;
-use rbatis::rbdc::DateTime; // Import the macro
+use rbatis::rbdc::db::ExecResult; // Import the macro
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Allocation {
     pub id: String,
     pub batch_id: String,
     pub order_line_id: String,
-    pub created_at: DateTime,
-    pub updated_at: DateTime,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
 }
 
 crud!(Allocation {}, "allocations");
@@ -18,8 +19,8 @@ impl Default for Allocation {
             id: "".to_string(),
             batch_id: "".to_string(),
             order_line_id: "".to_string(),
-            created_at: DateTime::now(),
-            updated_at: DateTime::now(),
+            created_at: Local::now().naive_local(),
+            updated_at: Local::now().naive_local(),
         }
     }
 }
@@ -30,16 +31,16 @@ impl Allocation {
             id: xid::new().to_string(),
             batch_id,
             order_line_id,
-            created_at: DateTime::now(),
-            updated_at: DateTime::now(),
+            created_at: Local::now().naive_local(),
+            updated_at: Local::now().naive_local(),
         }
     }
 
-    pub async fn find_all(rb: &rbatis::Rbatis) -> rbatis::Result<Vec<Allocation>> {
+    pub async fn find_all(rb: &rbatis::RBatis) -> rbatis::Result<Vec<Allocation>> {
         Allocation::select_all(rb).await
     }
 
-    pub async fn get(rb: &rbatis::Rbatis, id: &str) -> rbatis::Result<Option<Allocation>> {
+    pub async fn get(rb: &rbatis::RBatis, id: &str) -> rbatis::Result<Option<Allocation>> {
         let allocations = Allocation::select_by_map(rb, rbs::value::Value::from(id)).await;
         match allocations {
             Ok(list) => {
@@ -53,11 +54,14 @@ impl Allocation {
         }
     }
 
-    pub async fn create(rb: &rbatis::Rbatis, allocation: &Allocation) -> rbatis::Result<u64> {
+    pub async fn create(
+        rb: &rbatis::RBatis,
+        allocation: &Allocation,
+    ) -> rbatis::Result<ExecResult> {
         Allocation::insert(rb, allocation).await
     }
 
-    pub async fn remove(rb: &rbatis::Rbatis, id: &str) -> rbatis::Result<u64> {
+    pub async fn remove(rb: &rbatis::RBatis, id: &str) -> rbatis::Result<ExecResult> {
         Allocation::delete_by_map(rb, rbs::value::Value::from(id)).await
     }
 }
