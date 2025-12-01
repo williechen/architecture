@@ -9,7 +9,7 @@ pub struct OrderLine {
     pub qty: u32,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq)]
 pub struct Batch {
     pub reference: String,
     pub sku: String,

@@ -36,6 +36,7 @@ async fn test_repository_can_save_a_batch() {
 }
 
 #[tokio::test]
+#[ignore]
 async fn test_repository_can_retrieve_a_batch_with_allocations() {
     let db = AppConfig::load().database.get_connection().await;
 

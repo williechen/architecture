@@ -10,7 +10,7 @@ fn test_allocating_to_a_batch_reduces_the_available_quantity() {
         Some(Local::now().naive_local()),
     );
     let line = OrderLine {
-        order_id: "order-123".to_string(),
+        order_id: "order-ref".to_string(),
         sku: "SMALL-TABLE".to_string(),
         qty: 2,
     };
@@ -77,6 +77,14 @@ fn test_allocation_is_idempotent() {
     batch.allocate(&line);
     batch.allocate(&line);
     assert!(batch.available_quantity() == 18);
+}
+
+#[test]
+fn test_deallocate() {
+    let (mut batch, line) = make_batch_and_line("EXPENSIVE-FOOTSTOOL", 20, 2);
+    batch.allocate(&line);
+    batch.deallocate(&line);
+    assert!(batch.available_quantity() == 20);
 }
 
 #[test]
