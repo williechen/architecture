@@ -23,8 +23,8 @@ impl Default for OrderLine {
             order_id: "".to_string(),
             sku: "".to_string(),
             qty: 0,
-            created_at: Local::now().naive_local(),
-            updated_at: Local::now().naive_local(),
+            created_at: NaiveDateTime::from_timestamp(0, 0),
+            updated_at: NaiveDateTime::from_timestamp(0, 0),
         }
     }
 }

@@ -1,5 +1,8 @@
 use chrono::{Local, NaiveDateTime};
-use rbatis::{crud, impl_select, rbdc::db::ExecResult};
+use rbatis::{
+    crud, impl_select,
+    rbdc::{DateTime, db::ExecResult},
+};
 
 use crate::chapter1::model; // Import the macro
 
@@ -25,8 +28,8 @@ impl Default for Batch {
             sku: "".to_string(),
             purchased_quantity: 0,
             eta: None,
-            created_at: Local::now().naive_local(),
-            updated_at: Local::now().naive_local(),
+            created_at: NaiveDateTime::from_timestamp(0, 0),
+            updated_at: NaiveDateTime::from_timestamp(0, 0),
         }
     }
 }

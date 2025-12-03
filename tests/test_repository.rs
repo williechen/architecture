@@ -6,10 +6,48 @@ use architecture::{
 use chrono::Local;
 use rbatis::RBatis;
 
+async fn in_memory_db() -> RBatis {
+    let conn_str = "sqlite://:memory:";
+    let rbatis = RBatis::new();
+    rbatis.link(SqliteDriver {}, &conn_str).await.unwrap();
+    rbatis
+}
+
+async fn start_mappers(db: &RBatis) {
+    let mapper = &table_sync::SqliteTableMapper {} as &dyn table_sync::ColumnMapper;
+
+    RBatis::sync(
+        db,
+        mapper, // Assuming UamUser implements ColumnMapper
+        &batches::Batch::default(),
+        "batches",
+    )
+    .await
+    .unwrap();
+
+    RBatis::sync(
+        db,
+        mapper, // Assuming UamUser implements ColumnMapper
+        &order_lines::OrderLine::default(),
+        "order_lines",
+    )
+    .await
+    .unwrap();
+
+    RBatis::sync(
+        db,
+        mapper, // Assuming UamUser implements ColumnMapper
+        &allocations::Allocation::default(),
+        "allocations",
+    )
+    .await
+    .unwrap();
+}
+
 #[tokio::test]
-#[ignore]
 async fn test_repository_can_save_a_batch() {
-    let db = AppConfig::load().database.get_connection().await;
+    let db = in_memory_db().await;
+    start_mappers(&db).await;
 
     let batch = Batch {
         reference: "batch1".to_string(),
@@ -30,20 +68,17 @@ async fn test_repository_can_save_a_batch() {
     assert_eq!(fetched_batch[0].sku, "RUSTY-SOAPDISH");
     assert_eq!(fetched_batch[0].purchased_quantity, 100);
     assert_eq!(fetched_batch[0].eta, None);
-
-    let id = rbs::Value::from(fetched_batch[0].id.clone());
-    Batch::delete_by_map(&db, id).await.unwrap();
 }
 
 #[tokio::test]
-#[ignore]
 async fn test_repository_can_retrieve_a_batch_with_allocations() {
-    let db = AppConfig::load().database.get_connection().await;
+    let db = in_memory_db().await;
+    start_mappers(&db).await;
 
     let order_line_id = insert_order_line(&db).await;
     let batch_id = insert_batch(&db, "batch1".to_string()).await;
-    let batch_id1 = insert_batch(&db, "batch2".to_string()).await;
-    let allocation_id = insert_allocation(&db, order_line_id.clone(), batch_id.clone()).await;
+    insert_batch(&db, "batch2".to_string()).await;
+    insert_allocation(&db, order_line_id.clone(), batch_id.clone()).await;
 
     let fetched_batch = Batch::select_by_reference(&db, "batch1").await.unwrap();
     let fetched_order_line = OrderLine::select_by_order_id(&db, "order1").await.unwrap();
@@ -57,22 +92,14 @@ async fn test_repository_can_retrieve_a_batch_with_allocations() {
 
     assert_eq!(fetched_batch[0].reference, expected.reference);
     assert_eq!(fetched_batch[0].sku, expected.sku);
+    assert_eq!(
+        fetched_batch[0].purchased_quantity,
+        expected.allocated_quantity()
+    );
 
     assert_eq!(fetched_order_line[0].sku, expected_order.sku);
     assert_eq!(fetched_order_line[0].order_id, expected_order.order_id);
-
-    Batch::delete_by_map(&db, rbs::Value::from(batch_id))
-        .await
-        .unwrap();
-    Batch::delete_by_map(&db, rbs::Value::from(batch_id1))
-        .await
-        .unwrap();
-    OrderLine::delete_by_map(&db, rbs::Value::from(order_line_id))
-        .await
-        .unwrap();
-    Allocation::delete_by_map(&db, rbs::Value::from(allocation_id))
-        .await
-        .unwrap();
+    assert_eq!(fetched_order_line[0].qty, expected_order.qty);
 }
 
 async fn insert_order_line(db: &RBatis) -> String {

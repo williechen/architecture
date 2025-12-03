@@ -4,6 +4,7 @@ pub mod chapter2;
 pub mod configures;
 pub mod entities;
 pub mod logic;
+pub mod repositories;
 mod sitemaps;
 pub mod tokens;
 mod web_base;
