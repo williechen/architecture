@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{Data, DeriveInput, parse_macro_input};
+use syn::{Data, DeriveInput, Type, parse_macro_input};
 
 // CamelCase -> snake_case
 fn to_snake_case(name: &str) -> String {
@@ -34,9 +34,16 @@ pub fn sql_table(input: TokenStream) -> TokenStream {
     };
 
     let mut column_names = Vec::new();
+    let mut field_types = Vec::new();
     let mut field_idents = Vec::new();
 
     for f in fields.iter() {
+        let field_type = match &f.ty {
+            Type::Path(type_path) => type_path.path.segments.last().unwrap().ident.clone(),
+            _ => panic!("Unsupported field type"),
+        };
+        field_types.push(field_type);
+
         let field_ident = f.ident.as_ref().unwrap();
         field_idents.push(field_ident.clone());
 
@@ -66,7 +73,7 @@ pub fn sql_table(input: TokenStream) -> TokenStream {
         .iter()
         .zip(field_idents.iter())
         .map(|(col, field)| {
-            quote! { format!("{}='{}'", #col, self.#field) }
+            quote! { format!("{}={}", #col, self.#field) }
         });
 
     let columns_list = column_names.clone();
@@ -87,7 +94,7 @@ pub fn sql_table(input: TokenStream) -> TokenStream {
             }
 
             pub fn insert_sql(&self) -> String {
-                let values = vec![ #( format!("'{}'", self.#fields_list) ),* ];
+                let values = vec![ #( format!("{}", self.#fields_list) ),* ];
                 format!(
                     "INSERT INTO {} ({}) VALUES ({})",
                     Self::table_name(),
@@ -106,7 +113,7 @@ pub fn sql_table(input: TokenStream) -> TokenStream {
 
             // 單條件
             pub fn where_eq(field: &str, value: &str) -> String {
-                format!("{}='{}'", field, value)
+                format!("{}={}", field, value)
             }
 
             // 多條件 AND
