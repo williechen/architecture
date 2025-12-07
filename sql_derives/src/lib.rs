@@ -26,7 +26,23 @@ pub fn sql_table(input: TokenStream) -> TokenStream {
 
     let struct_name = input.ident.clone();
     let struct_name_str = struct_name.to_string();
-    let table_name_str = to_snake_case(&struct_name_str);
+    let mut table_name_str = to_snake_case(&struct_name_str);
+
+    // 解析 struct-level #[sql(table = "...")]
+    for attr in &input.attrs {
+        if attr.path().is_ident("sql") {
+            attr.parse_nested_meta(|meta| {
+                if meta.path.is_ident("table") {
+                    let lit: syn::LitStr = meta.value()?.parse()?;
+                    table_name_str = lit.value();
+                    Ok(())
+                } else {
+                    Err(meta.error("Unknown sql attribute on struct"))
+                }
+            })
+            .expect("Failed to parse sql attribute on struct");
+        }
+    }
 
     let fields = match input.data {
         Data::Struct(s) => s.fields,
@@ -42,7 +58,7 @@ pub fn sql_table(input: TokenStream) -> TokenStream {
             Type::Path(type_path) => type_path.path.segments.last().unwrap().ident.clone(),
             _ => panic!("Unsupported field type"),
         };
-        field_types.push(field_type);
+        field_types.push(field_type.clone());
 
         let field_ident = f.ident.as_ref().unwrap();
         field_idents.push(field_ident.clone());
@@ -69,11 +85,28 @@ pub fn sql_table(input: TokenStream) -> TokenStream {
     }
 
     let columns_literal = column_names.join(", ");
-    let sets = column_names
+
+    let values = field_types
         .iter()
         .zip(field_idents.iter())
-        .map(|(col, field)| {
-            quote! { format!("{}={}", #col, self.#field) }
+        .map(|(ty, field)| {
+            if ty == "String" || ty == "&str" || ty == "NaiveDateTime" || ty == "NaiveDate" {
+                quote! { format!("'{}'", self.#field) }
+            } else {
+                quote! { format!("{}", self.#field) }
+            }
+        });
+
+    let sets = column_names
+        .iter()
+        .zip(field_types.iter())
+        .zip(field_idents.iter())
+        .map(|((col, ty), field)| {
+            if ty == "String" || ty == "&str" || ty == "NaiveDateTime" || ty == "NaiveDate" {
+                quote! { format!("{}='{}'", #col, self.#field) }
+            } else {
+                quote! { format!("{}={}", #col, self.#field) }
+            }
         });
 
     let columns_list = column_names.clone();
@@ -89,17 +122,20 @@ pub fn sql_table(input: TokenStream) -> TokenStream {
                 vec![ #( #columns_list ),* ]
             }
 
-            pub fn select_sql() -> String {
-                format!("SELECT {} FROM {}", #columns_literal, Self::table_name())
+            pub fn select_sql(&self, where_clause: Option<&str>) -> String {
+                match where_clause {
+                    Some(cond) => format!("SELECT {} FROM {} WHERE {}", #columns_literal, Self::table_name(), cond),
+                    None => format!("SELECT {} FROM {} WHERE 1=1 ", #columns_literal, Self::table_name()),
+                }
             }
 
             pub fn insert_sql(&self) -> String {
-                let values = vec![ #( format!("{}", self.#fields_list) ),* ];
+                let values_vec = vec![ #( #values ),* ].join(", ");
                 format!(
                     "INSERT INTO {} ({}) VALUES ({})",
                     Self::table_name(),
                     #columns_literal,
-                    values.join(", ")
+                    values_vec
                 )
             }
 
@@ -107,7 +143,14 @@ pub fn sql_table(input: TokenStream) -> TokenStream {
                 let sets_vec = vec![ #( #sets ),* ].join(", ");
                 match where_clause {
                     Some(cond) => format!("UPDATE {} SET {} WHERE {}", Self::table_name(), sets_vec, cond),
-                    None => format!("UPDATE {} SET {}", Self::table_name(), sets_vec),
+                    None => format!("UPDATE {} SET {} WHERE 1=1 ", Self::table_name(), sets_vec),
+                }
+            }
+
+            pub fn delete_sql(&self, where_clause: Option<&str>) -> String {
+                match where_clause {
+                    Some(cond) => format!("DELETE FROM {} WHERE {}", Self::table_name(), cond),
+                    None => format!("DELETE FROM {} WHERE 1=1 ", Self::table_name()),
                 }
             }
 
@@ -118,12 +161,12 @@ pub fn sql_table(input: TokenStream) -> TokenStream {
 
             // 多條件 AND
             pub fn where_and(conditions: Vec<String>) -> String {
-                conditions.join(" AND ")
+                format!("({})", conditions.join(" AND "))
             }
 
             // 多條件 OR
             pub fn where_or(conditions: Vec<String>) -> String {
-                conditions.join(" OR ")
+                format!("({})", conditions.join(" OR "))
             }
         }
     };

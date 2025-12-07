@@ -8,7 +8,10 @@ proc-macro = true
 
 [dependencies]
 
+chrono = { version = "0.4", features = ["serde"] }
+
 proc-macro2 = "1.0"
+
 quote = "1.0"
 
 syn = { version = "2.0", features = ["full"] }
