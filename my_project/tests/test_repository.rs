@@ -1,10 +1,14 @@
 use architecture::{
     chapter1::model,
-    configures::AppConfig,
-    entities::{allocations::Allocation, batches::Batch, order_lines::OrderLine},
+    entities::{
+        allocations::{self, Allocation},
+        batches::{self, Batch},
+        order_lines::{self, OrderLine},
+    },
 };
 use chrono::Local;
-use rbatis::RBatis;
+use rbatis::{RBatis, table_sync};
+use rbdc_sqlite::driver::SqliteDriver;
 
 async fn in_memory_db() -> RBatis {
     let conn_str = "sqlite://:memory:";

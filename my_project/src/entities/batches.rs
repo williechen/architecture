@@ -1,4 +1,6 @@
-use chrono::{Local, NaiveDateTime};
+use std::ptr::null;
+
+use chrono::{Date, Local, NaiveDateTime};
 use rbatis::{
     crud, impl_select,
     rbdc::{DateTime, db::ExecResult},
@@ -6,15 +8,15 @@ use rbatis::{
 
 use crate::chapter1::model; // Import the macro
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct Batch {
     pub id: String,
     pub reference: String,
     pub sku: String,
     pub purchased_quantity: u32,
-    pub eta: Option<NaiveDateTime>,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
+    pub eta: Option<DateTime>,
+    pub created_at: DateTime,
+    pub updated_at: DateTime,
 }
 
 crud!(Batch {}, "batches");
@@ -28,22 +30,22 @@ impl Default for Batch {
             sku: "".to_string(),
             purchased_quantity: 0,
             eta: None,
-            created_at: NaiveDateTime::from_timestamp(0, 0),
-            updated_at: NaiveDateTime::from_timestamp(0, 0),
+            created_at: DateTime::default(),
+            updated_at: DateTime::default(),
         }
     }
 }
 
 impl Batch {
-    pub fn new(reference: &str, sku: &str, qrt: u32, eta: Option<NaiveDateTime>) -> Self {
+    pub fn new(reference: &str, sku: &str, qrt: u32, eta: Option<DateTime>) -> Self {
         Batch {
             id: xid::new().to_string(),
             reference: reference.to_string(),
             sku: sku.to_string(),
             purchased_quantity: qrt,
             eta,
-            created_at: Local::now().naive_local(),
-            updated_at: Local::now().naive_local(),
+            created_at: DateTime::now(),
+            updated_at: DateTime::now(),
         }
     }
 
@@ -51,7 +53,17 @@ impl Batch {
         let batches = Batch::select_all(db).await?;
         let batch_models: Vec<model::Batch> = batches
             .into_iter()
-            .map(|b| model::Batch::new(&b.reference, &b.sku, b.purchased_quantity, b.eta))
+            .map(|b| {
+                model::Batch::new(
+                    &b.reference,
+                    &b.sku,
+                    b.purchased_quantity,
+                    match b.eta {
+                        Some(d) => NaiveDateTime::
+                        None => None,
+                    },
+                )
+            })
             .collect();
         Ok(batch_models)
     }
@@ -67,7 +79,7 @@ impl Batch {
                         &list[0].reference,
                         &list[0].sku,
                         list[0].purchased_quantity,
-                        list[0].eta,
+                        Self::to_date_time(list[0].eta.clone()),
                     )))
                 }
             }
@@ -82,8 +94,8 @@ impl Batch {
             sku: batch.sku.clone(),
             purchased_quantity: batch.available_quantity(),
             eta: batch.eta,
-            created_at: Local::now().naive_local(),
-            updated_at: Local::now().naive_local(),
+            created_at: DateTime::now(),
+            updated_at: DateTime::now(),
         };
 
         Batch::insert(db, &batch).await?;
@@ -102,8 +114,8 @@ impl Batch {
             sku: batch.sku.clone(),
             purchased_quantity: batch.available_quantity(),
             eta: batch.eta,
-            created_at: Local::now().naive_local(),
-            updated_at: Local::now().naive_local(),
+            created_at: DateTime::now(),
+            updated_at: DateTime::now(),
         };
         Batch::update_by_map(db, &batch, rbs::Value::from(id)).await
     }

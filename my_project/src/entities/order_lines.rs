@@ -1,16 +1,15 @@
-use chrono::{Local, NaiveDateTime};
 use rbatis::{crud, impl_select, rbdc::db::ExecResult};
 
 use crate::chapter1::model; // Import the crud macro
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct OrderLine {
     pub id: String,
     pub order_id: String,
     pub sku: String,
     pub qty: u32,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
+    pub created_at: DateTime,
+    pub updated_at: DateTime,
 }
 
 crud!(OrderLine {}, "order_lines");
@@ -23,8 +22,8 @@ impl Default for OrderLine {
             order_id: "".to_string(),
             sku: "".to_string(),
             qty: 0,
-            created_at: NaiveDateTime::from_timestamp(0, 0),
-            updated_at: NaiveDateTime::from_timestamp(0, 0),
+            created_at: DateTime::default(),
+            updated_at: DateTime::default(),
         }
     }
 }
@@ -36,8 +35,8 @@ impl OrderLine {
             order_id,
             sku,
             qty,
-            created_at: Local::now().naive_local(),
-            updated_at: Local::now().naive_local(),
+            created_at: DateTime::now(),
+            updated_at: DateTime::now(),
         }
     }
 
@@ -86,8 +85,8 @@ impl OrderLine {
             order_id: order_line.order_id.clone(),
             sku: order_line.sku.clone(),
             qty: order_line.qty,
-            created_at: Local::now().naive_local(),
-            updated_at: Local::now().naive_local(),
+            created_at: DateTime::now(),
+            updated_at: DateTime::now(),
         };
         OrderLine::insert(db, &order_line).await?;
 
@@ -104,8 +103,8 @@ impl OrderLine {
             order_id: order_line.order_id.clone(),
             sku: order_line.sku.clone(),
             qty: order_line.qty,
-            created_at: Local::now().naive_local(),
-            updated_at: Local::now().naive_local(),
+            created_at: DateTime::now(),
+            updated_at: DateTime::now(),
         };
         OrderLine::update_by_map(db, &order_line, rbs::Value::from(id)).await
     }

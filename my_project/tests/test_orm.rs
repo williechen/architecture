@@ -1,4 +1,9 @@
-use architecture::entities::order_lines::OrderLine;
+use architecture::entities::{
+    allocations, batches,
+    order_lines::{self, OrderLine},
+};
+use rbatis::{RBatis, table_sync};
+use rbdc_sqlite::driver::SqliteDriver;
 
 async fn in_memory_db() -> RBatis {
     let conn_str = "sqlite://:memory:";
@@ -43,7 +48,7 @@ async fn test_orderline_mapper_can_load_lines() {
     let db = in_memory_db().await;
     start_mappers(&db).await;
 
-    db.query_decode(
+    db.exec(
         r"
         INSERT INTO order_lines (id, order_id, sku, qty, created_at, updated_at)
         VALUES ('1', 'order1', 'RED-CHAIR', 12, datetime('now'), datetime('now')),
@@ -104,9 +109,9 @@ async fn test_orderline_mapper_can_save_line() {
 
     OrderLine::insert(&db, &new_line).await.unwrap();
 
-    let fetched_line: Option<OrderLine> = OrderLine::select_all(&db).await.unwrap();
+    let fetched_line: Vec<OrderLine> = OrderLine::select_all(&db).await.unwrap();
 
-    assert!(fetched_line == new_line);
+    assert!(fetched_line[0] == new_line);
 }
 
 #[tokio::test]
@@ -115,7 +120,7 @@ async fn test_retrieving_batches() {
     start_mappers(&db).await;
 
     // Insert test data into batches table
-    db.query_decode(
+    db.exec(
         r"
         INSERT INTO batches (id, reference, sku, purchased_quantity, eta, created_at, updated_at)
         VALUES ('1', 'batch1', 'sku1', 100, NULL, datetime('now'), datetime('now')),
@@ -144,7 +149,12 @@ async fn test_retrieving_batches() {
             reference: "batch2".to_string(),
             sku: "sku2".to_string(),
             purchased_quantity: 200,
-            eta: Some(chrono::NaiveDate::from_ymd(2011, 4, 11)),
+            eta: Some(
+                chrono::NaiveDate::from_ymd_opt(2011, 4, 11)
+                    .unwrap()
+                    .and_hms_opt(0, 0, 0)
+                    .unwrap(),
+            ),
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
         },
@@ -223,11 +233,28 @@ async fn test_retrieving_allocations() {
     let db = in_memory_db().await;
     start_mappers(&db).await;
     // Insert test data into allocations table
-    db.query_decode(
+    db.exec(
+        r"
+        INSERT INTO order_lines (id, order_id, sku, qty) VALUES ('1', 'order1', 'sku1', 12)
+    ",
+        vec![],
+    )
+    .await
+    .unwrap();
+
+    db.exec(
+        r"
+        INSERT INTO batches (id, reference, sku, purchased_quantity, eta) VALUES ('1', 'batch1', 'sku1', 100, NULL)
+    ",
+        vec![],
+    )
+    .await
+    .unwrap();
+
+    db.exec(
         r"
         INSERT INTO allocations (id, order_line_id, batch_id, created_at, updated_at)
-        VALUES ('1', '1', '1', datetime('now'), datetime('now')),
-               ('2', '2', '2', datetime('now'), datetime('now'))
+        VALUES ('1', '1', '1', datetime('now'), datetime('now'))
     ",
         vec![],
     )
@@ -237,22 +264,19 @@ async fn test_retrieving_allocations() {
     // Retrieve allocations
     let allocations: Vec<allocations::Allocation> =
         allocations::Allocation::select_all(&db).await.unwrap();
-    let expected = vec![
-        allocations::Allocation {
-            id: "1".to_string(),
-            order_line_id: "1".to_string(),
-            batch_id: "1".to_string(),
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
-        },
-        allocations::Allocation {
-            id: "2".to_string(),
-            order_line_id: "2".to_string(),
-            batch_id: "2".to_string(),
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
-        },
-    ];
 
-    assert!(allocations == expected);
+    let id = rbs::Value::from(allocations[0].order_line_id.clone());
+
+    let order_lines = OrderLine::select_by_map(&db, id).await.unwrap();
+
+    let expected = OrderLine {
+        id: "1".to_string(),
+        order_id: "order1".to_string(),
+        sku: "sku1".to_string(),
+        qty: 12,
+        created_at: chrono::Local::now().naive_local(),
+        updated_at: chrono::Local::now().naive_local(),
+    };
+
+    assert!(order_lines == vec![expected]);
 }

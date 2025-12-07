@@ -1,14 +1,14 @@
-use chrono::{Local, NaiveDateTime};
+
 use rbatis::crud;
 use rbatis::rbdc::db::ExecResult; // Import the macro
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct Allocation {
     pub id: String,
     pub batch_id: String,
     pub order_line_id: String,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
+    pub created_at: DateTime,
+    pub updated_at: DateTime,
 }
 
 crud!(Allocation {}, "allocations");
@@ -19,8 +19,8 @@ impl Default for Allocation {
             id: "".to_string(),
             batch_id: "".to_string(),
             order_line_id: "".to_string(),
-            created_at: NaiveDateTime::from_timestamp(0, 0),
-            updated_at: NaiveDateTime::from_timestamp(0, 0),
+            created_at: DateTime::default(),
+            updated_at: DateTime::default(),
         }
     }
 }
@@ -31,8 +31,8 @@ impl Allocation {
             id: xid::new().to_string(),
             batch_id,
             order_line_id,
-            created_at: Local::now().naive_local(),
-            updated_at: Local::now().naive_local(),
+            created_at: DateTime::now(),
+            updated_at: DateTime::now(),
         }
     }
 
