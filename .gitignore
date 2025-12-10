@@ -1,5 +1,7 @@
-/target
+/code
 /logs
+/target
+
 
 *.lock
 .DS_Store
