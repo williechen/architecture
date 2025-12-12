@@ -1,26 +1,12 @@
-use rbatis::{crud, rbdc::DateTime};
+use chrono::NaiveDateTime;
+use sql_derives::SqlTable;
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, SqlTable)]
 pub struct UamUser {
     pub id: String,
     pub user_name: String,
     pub pswd_hash: String,
     pub email: String,
-    pub created_at: DateTime,
-    pub updated_at: DateTime,
-}
-
-crud!(UamUser {}, "uam_user");
-
-impl Default for UamUser {
-    fn default() -> Self {
-        UamUser {
-            id: "".to_string(),
-            user_name: "".to_string(),
-            pswd_hash: "".to_string(),
-            email: "".to_string(),
-            created_at: DateTime::now(),
-            updated_at: DateTime::now(),
-        }
-    }
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
 }

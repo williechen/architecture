@@ -1,5 +1,7 @@
 use proc_macro::TokenStream;
 use quote::quote;
+use syn::GenericArgument;
+use syn::PathArguments;
 use syn::{Data, DeriveInput, Type, parse_macro_input};
 
 // CamelCase -> snake_case
@@ -18,6 +20,35 @@ fn to_snake_case(name: &str) -> String {
         }
     }
     result
+}
+
+/// 輔助函數：解析型別，回傳 (型別名稱字串, 是否為 Option)
+/// 例如:
+///   String -> ("String", false)
+///   Option<i32> -> ("i32", true)
+fn get_type_info(ty: &Type) -> (String, bool) {
+    if let Type::Path(type_path) = ty {
+        if let Some(segment) = type_path.path.segments.last() {
+            if segment.ident == "Option" {
+                // 如果是 Option，解析角括號內的型別 <T>
+                if let PathArguments::AngleBracketed(args) = &segment.arguments {
+                    if let Some(GenericArgument::Type(inner_ty)) = args.args.first() {
+                        // 遞迴呼叫或是直接取 inner type 的名稱
+                        // 這裡簡化處理，直接取 inner type 的最後一個 segment
+                        if let Type::Path(inner_path) = inner_ty {
+                            if let Some(inner_seg) = inner_path.path.segments.last() {
+                                return (inner_seg.ident.to_string(), true);
+                            }
+                        }
+                    }
+                }
+            } else {
+                // 不是 Option
+                return (segment.ident.to_string(), false);
+            }
+        }
+    }
+    panic!("Unsupported field type parsing");
 }
 
 #[proc_macro_derive(SqlTable, attributes(sql))]
@@ -50,15 +81,12 @@ pub fn sql_table(input: TokenStream) -> TokenStream {
     };
 
     let mut column_names = Vec::new();
-    let mut field_types = Vec::new();
+    let mut field_infos = Vec::new(); // 儲存 (type_name, is_option)
     let mut field_idents = Vec::new();
 
     for f in fields.iter() {
-        let field_type = match &f.ty {
-            Type::Path(type_path) => type_path.path.segments.last().unwrap().ident.clone(),
-            _ => panic!("Unsupported field type"),
-        };
-        field_types.push(field_type.clone());
+        let (type_name, is_option) = get_type_info(&f.ty);
+        field_infos.push((type_name, is_option));
 
         let field_ident = f.ident.as_ref().unwrap();
         field_idents.push(field_ident.clone());
@@ -86,31 +114,81 @@ pub fn sql_table(input: TokenStream) -> TokenStream {
 
     let columns_literal = column_names.join(", ");
 
-    let values = field_types
+    let values = field_infos
         .iter()
         .zip(field_idents.iter())
-        .map(|(ty, field)| {
-            if ty == "String" || ty == "&str" || ty == "NaiveDateTime" || ty == "NaiveDate" {
-                quote! { format!("'{}'", self.#field) }
+        .map(|((ty, is_opt), field)| {
+            let needs_quotes = matches!(
+                ty.as_str(),
+                "String" | "&str" | "NaiveDateTime" | "NaiveDate"
+            );
+
+            if *is_opt {
+                // 如果是 Option
+                if needs_quotes {
+                    quote! {
+                        match &self.#field {
+                            Some(v) => format!("'{}'", v),
+                            None => "NULL".to_string()
+                        }
+                    }
+                } else {
+                    quote! {
+                        match &self.#field {
+                            Some(v) => format!("{}", v),
+                            None => "NULL".to_string()
+                        }
+                    }
+                }
             } else {
-                quote! { format!("{}", self.#field) }
+                // 如果不是 Option (原本的邏輯)
+                if needs_quotes {
+                    quote! { format!("'{}'", self.#field) }
+                } else {
+                    quote! { format!("{}", self.#field) }
+                }
             }
         });
 
     let sets = column_names
         .iter()
-        .zip(field_types.iter())
+        .zip(field_infos.iter())
         .zip(field_idents.iter())
-        .map(|((col, ty), field)| {
-            if ty == "String" || ty == "&str" || ty == "NaiveDateTime" || ty == "NaiveDate" {
-                quote! { format!("{}='{}'", #col, self.#field) }
+        .map(|((col, (ty, is_opt)), field)| {
+            let needs_quotes = matches!(
+                ty.as_str(),
+                "String" | "&str" | "NaiveDateTime" | "NaiveDate"
+            );
+
+            if *is_opt {
+                // 如果是 Option
+                if needs_quotes {
+                    quote! {
+                        match &self.#field {
+                            Some(v) => Some(format!("{}='{}'", #col, v)),
+                            None => None
+                        }
+                    }
+                } else {
+                    quote! {
+                        match &self.#field {
+                            Some(v) => Some(format!("{}={}", #col, v)),
+                            None => None
+                        }
+                    }
+                }
             } else {
-                quote! { format!("{}={}", #col, self.#field) }
+                // 如果不是 Option (原本的邏輯)
+                if needs_quotes {
+                    quote! { Some(format!("{}='{}'", #col, self.#field)) }
+                } else {
+                    quote! { Some(format!("{}={}", #col, self.#field)) }
+                }
             }
         });
 
     let columns_list = column_names.clone();
-    let fields_list = field_idents.clone();
+    let _fields_list = field_idents.clone();
 
     let expanded = quote! {
         impl #struct_name {
@@ -140,10 +218,22 @@ pub fn sql_table(input: TokenStream) -> TokenStream {
             }
 
             pub fn update_sql(&self, where_clause: Option<&str>) -> String {
-                let sets_vec = vec![ #( #sets ),* ].join(", ");
+                // 1. 收集所有欄位的 Option<String>
+                let sets_options: Vec<Option<String>> = vec![ #( #sets ),* ];
+
+                // 2. 過濾掉 None，只留下要更新的欄位
+                let sets_vec: Vec<String> = sets_options.into_iter().filter_map(|x| x).collect();
+
+                // 3. 如果沒有任何欄位需要更新 (例如全都是 None)，這裡回傳空字串或者可根據需求噴錯
+                if sets_vec.is_empty() {
+                    return String::new();
+                }
+
+                let sets_str = sets_vec.join(", ");
+
                 match where_clause {
-                    Some(cond) => format!("UPDATE {} SET {} WHERE {}", Self::table_name(), sets_vec, cond),
-                    None => format!("UPDATE {} SET {} WHERE 1=1 ", Self::table_name(), sets_vec),
+                    Some(cond) => format!("UPDATE {} SET {} WHERE {}", Self::table_name(), sets_str, cond),
+                    None => format!("UPDATE {} SET {} WHERE 1=1 ", Self::table_name(), sets_str),
                 }
             }
 

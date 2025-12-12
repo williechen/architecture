@@ -1,6 +1,6 @@
 use crate::entities::ssm_codemap::SsmCodemap;
 use crate::entities::ssm_config::SsmConfig;
-use rbatis::rbatis::RBatis;
+use sqlx::SqlitePool;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -9,7 +9,7 @@ use tokio_cron_scheduler::JobScheduler;
 
 #[derive(Debug, Clone)]
 pub struct AppState {
-    pub db: RBatis,
+    pub db: SqlitePool,
     pub codemap: Arc<RwLock<HashMap<String, HashMap<String, String>>>>,
     pub config: Arc<RwLock<HashMap<String, HashMap<String, String>>>>,
 }
@@ -49,7 +49,7 @@ pub async fn load(state: AppState) {
     scheduler.start().await.unwrap();
 }
 
-pub async fn load_codemap(db: &RBatis) -> HashMap<String, HashMap<String, String>> {
+pub async fn load_codemap(db: &SqlitePool) -> HashMap<String, HashMap<String, String>> {
     tracing::debug!("selecting codemap...");
 
     let mut codemap = HashMap::new();
@@ -67,7 +67,7 @@ pub async fn load_codemap(db: &RBatis) -> HashMap<String, HashMap<String, String
     codemap
 }
 
-pub async fn load_config(db: &RBatis) -> HashMap<String, HashMap<String, String>> {
+pub async fn load_config(db: &SqlitePool) -> HashMap<String, HashMap<String, String>> {
     tracing::info!("selecting config...");
 
     let mut config = HashMap::new();

@@ -1,8 +1,6 @@
-use rbatis::{RBatis, table_sync};
-use rbdc_sqlite::driver::SqliteDriver;
 use serde::{Deserialize, Serialize};
-
-use crate::entities::{allocations, batches, order_lines};
+use sqlx::SqlitePool;
+use sqlx::sqlite::SqlitePoolOptions;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DatabaseConfig {
@@ -15,46 +13,18 @@ pub struct DatabaseConfig {
 }
 
 impl DatabaseConfig {
-    pub async fn get_connection(&self) -> RBatis {
+    pub async fn get_connection(&self) -> SqlitePool {
         let conn_str = format!("sqlite://{}.db", self.database.as_deref().unwrap_or("mydb"),);
-        let rbatis = RBatis::new();
-        rbatis.link(SqliteDriver {}, &conn_str).await.unwrap();
+
+        let pool_options = SqlitePoolOptions::new();
+
+        let pool = pool_options
+            .connect(&conn_str)
+            .await
+            .expect("Failed to create database po`ol");
 
         tracing::info!("Connected to database at {}", conn_str);
 
-        rbatis
-    }
-
-    pub async fn sync_schema(db: &RBatis) {
-        let mapper = &table_sync::SqliteTableMapper {} as &dyn table_sync::ColumnMapper;
-
-        RBatis::sync(
-            db,
-            mapper, // Assuming UamUser implements ColumnMapper
-            &batches::Batch::default(),
-            "batches",
-        )
-        .await
-        .unwrap();
-
-        RBatis::sync(
-            db,
-            mapper, // Assuming UamUser implements ColumnMapper
-            &order_lines::OrderLine::default(),
-            "order_lines",
-        )
-        .await
-        .unwrap();
-
-        RBatis::sync(
-            db,
-            mapper, // Assuming UamUser implements ColumnMapper
-            &allocations::Allocation::default(),
-            "allocations",
-        )
-        .await
-        .unwrap();
-
-        tracing::info!("Database schema synchronized");
+        pool
     }
 }

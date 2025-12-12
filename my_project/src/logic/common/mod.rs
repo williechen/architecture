@@ -3,7 +3,6 @@ use std::process::Command;
 use crate::{entities::ssm_codemap::SsmCodemap, sitemaps::app_state::AppState};
 use axum::{Json, Router, extract::State, routing::get};
 use chrono::Local;
-use rbatis::rbdc::DateTime;
 
 pub async fn common_routes() -> Router<AppState> {
     Router::new()
@@ -18,8 +17,8 @@ async fn get_cache(State(state): State<AppState>) -> Json<String> {
         code: "001".to_string(),
         name: "Example Code".to_string(),
         description: "This is an example code entry.".to_string(),
-        created_at: DateTime::now(),
-        updated_at: DateTime::now(),
+        created_at: Local::now().naive_local(),
+        updated_at: Local::now().naive_local(),
     };
     SsmCodemap::insert(&state.db, &codemap).await.ok();
 

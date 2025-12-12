@@ -5,9 +5,10 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use axum::Router;
+use axum::http::StatusCode;
 use axum::http::{Request, Uri};
 use axum::response::IntoResponse;
-use rbatis::rbatis::RBatis;
+use sqlx::SqlitePool;
 use tower_http::compression::CompressionLayer;
 use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
@@ -18,7 +19,7 @@ use crate::logic;
 use crate::sitemaps::app_state::AppState;
 use crate::web_base::web_errors;
 
-pub async fn sitemap(db: RBatis) -> Router {
+pub async fn sitemap(db: SqlitePool) -> Router {
     let app_state = AppState {
         db: db.clone(),
         codemap: Arc::new(RwLock::new(app_state::load_codemap(&db).await)),
@@ -40,7 +41,10 @@ pub async fn sitemap(db: RBatis) -> Router {
         .set_script_src("'self'")
         .set_style_src("'self'");
 
-    let timeout = TimeoutLayer::new(std::time::Duration::from_secs(10));
+    let timeout = TimeoutLayer::with_status_code(
+        StatusCode::REQUEST_TIMEOUT,
+        std::time::Duration::from_secs(10),
+    );
 
     let trace = TraceLayer::new_for_http()
         .make_span_with(|request: &Request<axum::body::Body>| {
