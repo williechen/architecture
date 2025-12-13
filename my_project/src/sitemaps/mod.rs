@@ -2,13 +2,15 @@ pub mod app_state;
 mod csp_layer;
 
 use std::sync::Arc;
-use tokio::sync::RwLock;
 
 use axum::Router;
 use axum::http::StatusCode;
 use axum::http::{Request, Uri};
 use axum::response::IntoResponse;
-use sqlx::AnyPool;
+
+use sqlx::SqlitePool;
+
+use tokio::sync::RwLock;
 
 use tower_http::compression::CompressionLayer;
 use tower_http::cors::CorsLayer;
@@ -20,7 +22,7 @@ use crate::logic;
 use crate::sitemaps::app_state::AppState;
 use crate::web_base::web_errors;
 
-pub async fn sitemap(db: AnyPool) -> Router {
+pub async fn sitemap(db: SqlitePool) -> Router {
     let app_state = AppState {
         db: db.clone(),
         codemap: Arc::new(RwLock::new(app_state::load_codemap(&db).await)),

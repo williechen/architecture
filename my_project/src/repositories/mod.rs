@@ -2,15 +2,15 @@ use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
 use serde_json::Map;
 use serde_json::Value as JsonValue;
-use sqlx::AnyPool;
 use sqlx::Column;
 use sqlx::Row;
+use sqlx::SqlitePool;
 use sqlx::Value; // ★ 必須
 use sqlx::ValueRef;
-use sqlx::any::AnyQueryResult;
-use sqlx::any::AnyValue;
+use sqlx::sqlite::SqliteQueryResult;
+use sqlx::sqlite::SqliteValue;
 
-fn decode_any_value(raw: AnyValue) -> JsonValue {
+fn decode_any_value(raw: SqliteValue) -> JsonValue {
     // 整數
     if let Ok(opt) = raw.try_decode::<Option<i64>>() {
         return opt.map(JsonValue::from).unwrap_or(JsonValue::Null);
@@ -55,7 +55,7 @@ fn decode_any_value(raw: AnyValue) -> JsonValue {
 }
 
 /// 主函式：執行任意 SQL，將每一列轉成 serde_json::Value（動態欄位）
-pub async fn read_to_json(pool: &AnyPool, sql: &str) -> Result<Vec<JsonValue>, sqlx::Error> {
+pub async fn read_to_json(pool: &SqlitePool, sql: &str) -> Result<Vec<JsonValue>, sqlx::Error> {
     let rows = sqlx::query(sql).fetch_all(pool).await?;
 
     let mut out = Vec::with_capacity(rows.len());
@@ -77,7 +77,10 @@ pub async fn read_to_json(pool: &AnyPool, sql: &str) -> Result<Vec<JsonValue>, s
     Ok(out)
 }
 
-pub async fn read_one_to_json(pool: &AnyPool, sql: &str) -> Result<Option<JsonValue>, sqlx::Error> {
+pub async fn read_one_to_json(
+    pool: &SqlitePool,
+    sql: &str,
+) -> Result<Option<JsonValue>, sqlx::Error> {
     let row_opt = sqlx::query(sql).fetch_optional(pool).await?;
 
     if let Some(row) = row_opt {
@@ -96,33 +99,33 @@ pub async fn read_one_to_json(pool: &AnyPool, sql: &str) -> Result<Option<JsonVa
     }
 }
 
-pub async fn read<T>(pool: &AnyPool, sql: &str) -> Result<Vec<T>, sqlx::Error>
+pub async fn read<T>(pool: &SqlitePool, sql: &str) -> Result<Vec<T>, sqlx::Error>
 where
-    T: for<'r> sqlx::FromRow<'r, sqlx::any::AnyRow> + Send + Unpin,
+    T: for<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> + Send + Unpin,
 {
     let rows: Vec<T> = sqlx::query_as(sql).fetch_all(pool).await?;
     Ok(rows)
 }
 
-pub async fn read_one<T>(pool: &AnyPool, sql: &str) -> Result<Option<T>, sqlx::Error>
+pub async fn read_one<T>(pool: &SqlitePool, sql: &str) -> Result<Option<T>, sqlx::Error>
 where
-    T: for<'r> sqlx::FromRow<'r, sqlx::any::AnyRow> + Send + Unpin,
+    T: for<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> + Send + Unpin,
 {
     let row_opt: Option<T> = sqlx::query_as(sql).fetch_optional(pool).await?;
     Ok(row_opt)
 }
 
-pub async fn create(pool: &AnyPool, sql: &str) -> Result<AnyQueryResult, sqlx::Error> {
+pub async fn create(pool: &SqlitePool, sql: &str) -> Result<SqliteQueryResult, sqlx::Error> {
     let query_result = sqlx::query(sql).execute(pool).await?;
     Ok(query_result)
 }
 
-pub async fn update(pool: &AnyPool, sql: &str) -> Result<AnyQueryResult, sqlx::Error> {
+pub async fn update(pool: &SqlitePool, sql: &str) -> Result<SqliteQueryResult, sqlx::Error> {
     let query_result = sqlx::query(sql).execute(pool).await?;
     Ok(query_result)
 }
 
-pub async fn delete(pool: &AnyPool, sql: &str) -> Result<AnyQueryResult, sqlx::Error> {
+pub async fn delete(pool: &SqlitePool, sql: &str) -> Result<SqliteQueryResult, sqlx::Error> {
     let query_result = sqlx::query(sql).execute(pool).await?;
     Ok(query_result)
 }

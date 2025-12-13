@@ -1,7 +1,7 @@
 use crate::entities::ssm_codemap::SsmCodemap;
 use crate::entities::ssm_config::SsmConfig;
 use crate::repositories::read;
-use sqlx::AnyPool;
+use sqlx::SqlitePool;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -10,7 +10,7 @@ use tokio_cron_scheduler::JobScheduler;
 
 #[derive(Debug, Clone)]
 pub struct AppState {
-    pub db: AnyPool,
+    pub db: SqlitePool,
     pub codemap: Arc<RwLock<HashMap<String, HashMap<String, String>>>>,
     pub config: Arc<RwLock<HashMap<String, HashMap<String, String>>>>,
 }
@@ -50,11 +50,11 @@ pub async fn load(state: AppState) {
     scheduler.start().await.unwrap();
 }
 
-pub async fn load_codemap(db: &AnyPool) -> HashMap<String, HashMap<String, String>> {
+pub async fn load_codemap(db: &SqlitePool) -> HashMap<String, HashMap<String, String>> {
     tracing::debug!("selecting codemap...");
 
     let mut codemap = HashMap::new();
-    let items: Vec<SsmCodemap> = read::<SsmCodemap>(db, SsmCodemap::select_sql(None))
+    let items: Vec<SsmCodemap> = read::<SsmCodemap>(db, &SsmCodemap::select_sql(None))
         .await
         .unwrap();
     for item in items {
@@ -70,7 +70,7 @@ pub async fn load_codemap(db: &AnyPool) -> HashMap<String, HashMap<String, Strin
     codemap
 }
 
-pub async fn load_config(db: &AnyPool) -> HashMap<String, HashMap<String, String>> {
+pub async fn load_config(db: &SqlitePool) -> HashMap<String, HashMap<String, String>> {
     tracing::info!("selecting config...");
 
     let mut config = HashMap::new();

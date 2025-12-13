@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
-use sqlx::any::install_default_drivers;
-use sqlx::{AnyPool, any::AnyPoolOptions};
+use sqlx::SqlitePool;
+use sqlx::sqlite::SqlitePoolOptions;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DatabaseConfig {
@@ -13,18 +13,17 @@ pub struct DatabaseConfig {
 }
 
 impl DatabaseConfig {
-    pub async fn get_connection(&self) -> AnyPool {
+    pub async fn get_connection(&self) -> SqlitePool {
         let conn_str = format!("sqlite://{}.db", self.database.as_deref().unwrap_or("mydb"),);
 
-        let pool_options = AnyPoolOptions::new();
+        tracing::info!("Connected to database at {}", conn_str);
 
-        install_default_drivers();
+        let pool_options = SqlitePoolOptions::new();
+
         let pool = pool_options
             .connect(&conn_str)
             .await
-            .expect("Failed to create database po`ol");
-
-        tracing::info!("Connected to database at {}", conn_str);
+            .expect("Failed to create database pool");
 
         pool
     }
