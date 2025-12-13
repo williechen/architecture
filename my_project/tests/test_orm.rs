@@ -2,42 +2,71 @@ use architecture::entities::{
     allocations, batches,
     order_lines::{self, OrderLine},
 };
-use rbatis::{RBatis, table_sync};
-use rbdc_sqlite::driver::SqliteDriver;
+use architecture::repositories::create;
+use architecture::repositories::read;
+use architecture::repositories::read_one;
+use sqlx::Executor;
+use sqlx::SqlitePool;
+use sqlx::sqlite::SqlitePoolOptions;
 
-async fn in_memory_db() -> RBatis {
-    let conn_str = "sqlite://:memory:";
-    let rbatis = RBatis::new();
-    rbatis.link(SqliteDriver {}, &conn_str).await.unwrap();
-    rbatis
+async fn in_memory_db() -> SqlitePool {
+    SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect("sqlite::memory:")
+        .await
+        .unwrap()
 }
 
-async fn start_mappers(db: &RBatis) {
-    let mapper = &table_sync::SqliteTableMapper {} as &dyn table_sync::ColumnMapper;
-
-    RBatis::sync(
-        db,
-        mapper, // Assuming UamUser implements ColumnMapper
-        &batches::Batch::default(),
-        "batches",
+async fn start_mappers(db: &SqlitePool) {
+    db.execute(
+        "CREATE TABLE test_table (
+                id INTEGER PRIMARY KEY,
+                name TEXT,
+                age INTEGER,
+                active INTEGER
+            )",
     )
     .await
     .unwrap();
 
-    RBatis::sync(
-        db,
-        mapper, // Assuming UamUser implements ColumnMapper
-        &order_lines::OrderLine::default(),
-        "order_lines",
+    db.execute(
+        r"
+        CREATE TABLE batches (
+            id TEXT PRIMARY KEY,
+            reference TEXT,
+            sku TEXT,
+            qty INTEGER,
+            eta TEXT,
+            created_at TEXT,
+            updated_at TEXT
+        )",
     )
     .await
     .unwrap();
 
-    RBatis::sync(
-        db,
-        mapper, // Assuming UamUser implements ColumnMapper
-        &allocations::Allocation::default(),
-        "allocations",
+    db.execute(
+        r"
+        CREATE TABLE order_lines (
+            id TEXT PRIMARY KEY,
+            order_id TEXT,
+            sku TEXT,
+            qty INTEGER,
+            created_at TEXT,
+            updated_at TEXT
+        )",
+    )
+    .await
+    .unwrap();
+
+    db.execute(
+        r"
+        CREATE TABLE allocations (
+            id TEXT PRIMARY KEY,
+            order_line_id TEXT,
+            batch_id TEXT,
+            created_at TEXT,
+            updated_at TEXT
+        )",
     )
     .await
     .unwrap();
@@ -48,14 +77,13 @@ async fn test_orderline_mapper_can_load_lines() {
     let db = in_memory_db().await;
     start_mappers(&db).await;
 
-    db.exec(
+    db.execute(
         r"
         INSERT INTO order_lines (id, order_id, sku, qty, created_at, updated_at)
-        VALUES ('1', 'order1', 'RED-CHAIR', 12, datetime('now'), datetime('now')),
-               ('2', 'order2', 'RED-TABLE', 13, datetime('now'), datetime('now')),
-               ('3', 'order3', 'BLUE-LIPSTICK', 14, datetime('now'), datetime('now'))
+        VALUES ('1', 'order1', 'RED-CHAIR', 12, '2025-12-08T00:00:00', '2025-12-08T00:00:00'),
+               ('2', 'order2', 'RED-TABLE', 13, '2025-12-08T00:00:00', '2025-12-08T00:00:00'),
+               ('3', 'order3', 'BLUE-LIPSTICK', 14, '2025-12-08T00:00:00', '2025-12-08T00:00:00')
     ",
-        vec![],
     )
     .await
     .unwrap();
@@ -66,28 +94,48 @@ async fn test_orderline_mapper_can_load_lines() {
             order_id: "order1".to_string(),
             sku: "RED-CHAIR".to_string(),
             qty: 12,
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
+            created_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap(),
+            updated_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap(),
         },
         OrderLine {
             id: "2".to_string(),
             order_id: "order2".to_string(),
             sku: "RED-TABLE".to_string(),
             qty: 13,
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
+            created_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap(),
+            updated_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap(),
         },
         OrderLine {
             id: "3".to_string(),
             order_id: "order3".to_string(),
             sku: "BLUE-LIPSTICK".to_string(),
             qty: 14,
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
+            created_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap(),
+            updated_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap(),
         },
     ];
 
-    let lines: Vec<OrderLine> = OrderLine::select_all(&db).await.unwrap();
+    let lines: Vec<OrderLine> = read::<OrderLine>(&db, &OrderLine::select_sql(None))
+        .await
+        .unwrap();
 
     assert!(lines.len() == expected.len());
     assert!(lines == expected);
@@ -103,15 +151,26 @@ async fn test_orderline_mapper_can_save_line() {
         order_id: "order1".to_string(),
         sku: "DECORATIVE-WIDGET".to_string(),
         qty: 12,
-        created_at: chrono::Local::now().naive_local(),
-        updated_at: chrono::Local::now().naive_local(),
+        created_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
+            .unwrap()
+            .and_hms_opt(0, 0, 0)
+            .unwrap(),
+        updated_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
+            .unwrap()
+            .and_hms_opt(0, 0, 0)
+            .unwrap(),
     };
 
-    OrderLine::insert(&db, &new_line).await.unwrap();
+    create(&db, &new_line.insert_sql()).await.unwrap();
 
-    let fetched_line: Vec<OrderLine> = OrderLine::select_all(&db).await.unwrap();
+    let fetched_line = read_one::<OrderLine>(
+        &db,
+        &OrderLine::select_sql(Some(&OrderLine::where_eq("id", "1"))),
+    )
+    .await
+    .unwrap();
 
-    assert!(fetched_line[0] == new_line);
+    assert!(fetched_line == Some(new_line));
 }
 
 #[tokio::test]
@@ -120,43 +179,57 @@ async fn test_retrieving_batches() {
     start_mappers(&db).await;
 
     // Insert test data into batches table
-    db.exec(
+    db.execute(
         r"
-        INSERT INTO batches (id, reference, sku, purchased_quantity, eta, created_at, updated_at)
-        VALUES ('1', 'batch1', 'sku1', 100, NULL, datetime('now'), datetime('now')),
-               ('2', 'batch2', 'sku2', 200, '2011-04-11', datetime('now'), datetime('now'))
+        INSERT INTO batches (id, reference, sku, qty, eta, created_at, updated_at)
+        VALUES ('1', 'batch1', 'sku1', 100, NULL, '2025-12-08T00:00:00', '2025-12-08T00:00:00'),
+               ('2', 'batch2', 'sku2', 200, '2011-04-11T00:00:00', '2025-12-08T00:00:00', '2025-12-08T00:00:00')
     ",
-        vec![],
     )
     .await
     .unwrap();
 
     // Retrieve batches
-    let batches: Vec<batches::Batch> = batches::Batch::select_all(&db).await.unwrap();
+    let batches: Vec<batches::Batch> =
+        read::<batches::Batch>(&db, &batches::Batch::select_sql(None))
+            .await
+            .unwrap();
 
     let expected = vec![
         batches::Batch {
             id: "1".to_string(),
             reference: "batch1".to_string(),
             sku: "sku1".to_string(),
-            purchased_quantity: 100,
+            qty: 100,
             eta: None,
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
+            created_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap(),
+            updated_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap(),
         },
         batches::Batch {
             id: "2".to_string(),
             reference: "batch2".to_string(),
             sku: "sku2".to_string(),
-            purchased_quantity: 200,
+            qty: 200,
             eta: Some(
                 chrono::NaiveDate::from_ymd_opt(2011, 4, 11)
                     .unwrap()
                     .and_hms_opt(0, 0, 0)
                     .unwrap(),
             ),
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
+            created_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap(),
+            updated_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap(),
         },
     ];
 
@@ -173,15 +246,24 @@ async fn test_saving_batches() {
         id: "1".to_string(),
         reference: "batch1".to_string(),
         sku: "sku1".to_string(),
-        purchased_quantity: 100,
+        qty: 100,
         eta: None,
-        created_at: chrono::Local::now().naive_local(),
-        updated_at: chrono::Local::now().naive_local(),
+        created_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
+            .unwrap()
+            .and_hms_opt(0, 0, 0)
+            .unwrap(),
+        updated_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
+            .unwrap()
+            .and_hms_opt(0, 0, 0)
+            .unwrap(),
     };
 
-    batches::Batch::insert(&db, &new_batch).await.unwrap();
+    create(&db, &new_batch.insert_sql()).await.unwrap();
 
-    let fetched_batch: Vec<batches::Batch> = batches::Batch::select_all(&db).await.unwrap();
+    let fetched_batch: Vec<batches::Batch> =
+        read::<batches::Batch>(&db, &batches::Batch::select_sql(None))
+            .await
+            .unwrap();
 
     assert!(fetched_batch == vec![new_batch]);
 }
@@ -195,10 +277,16 @@ async fn test_saving_allocations() {
         id: "1".to_string(),
         reference: "batch1".to_string(),
         sku: "sku1".to_string(),
-        purchased_quantity: 100,
+        qty: 100,
         eta: None,
-        created_at: chrono::Local::now().naive_local(),
-        updated_at: chrono::Local::now().naive_local(),
+        created_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
+            .unwrap()
+            .and_hms_opt(0, 0, 0)
+            .unwrap(),
+        updated_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
+            .unwrap()
+            .and_hms_opt(0, 0, 0)
+            .unwrap(),
     };
 
     let order_line = OrderLine {
@@ -206,24 +294,38 @@ async fn test_saving_allocations() {
         order_id: "order1".to_string(),
         sku: "sku1".to_string(),
         qty: 10,
-        created_at: chrono::Local::now().naive_local(),
-        updated_at: chrono::Local::now().naive_local(),
+        created_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
+            .unwrap()
+            .and_hms_opt(0, 0, 0)
+            .unwrap(),
+        updated_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
+            .unwrap()
+            .and_hms_opt(0, 0, 0)
+            .unwrap(),
     };
 
     let new_allocation = allocations::Allocation {
         id: "1".to_string(),
         order_line_id: order_line.id.clone(),
         batch_id: batch.id.clone(),
-        created_at: chrono::Local::now().naive_local(),
-        updated_at: chrono::Local::now().naive_local(),
+        created_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
+            .unwrap()
+            .and_hms_opt(0, 0, 0)
+            .unwrap(),
+        updated_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
+            .unwrap()
+            .and_hms_opt(0, 0, 0)
+            .unwrap(),
     };
 
-    allocations::Allocation::insert(&db, &new_allocation)
-        .await
-        .unwrap();
+    create(&db, &batch.insert_sql()).await.unwrap();
+    create(&db, &order_line.insert_sql()).await.unwrap();
+    create(&db, &new_allocation.insert_sql()).await.unwrap();
 
     let fetched_allocation: Vec<allocations::Allocation> =
-        allocations::Allocation::select_all(&db).await.unwrap();
+        read::<allocations::Allocation>(&db, &allocations::Allocation::select_sql(None))
+            .await
+            .unwrap();
 
     assert!(fetched_allocation == vec![new_allocation]);
 }
@@ -233,50 +335,60 @@ async fn test_retrieving_allocations() {
     let db = in_memory_db().await;
     start_mappers(&db).await;
     // Insert test data into allocations table
-    db.exec(
+    db.execute(
         r"
-        INSERT INTO order_lines (id, order_id, sku, qty) VALUES ('1', 'order1', 'sku1', 12)
+        INSERT INTO order_lines (id, order_id, sku, qty, created_at, updated_at) VALUES ('1', 'order1', 'sku1', 12, '2025-12-08T00:00:00', '2025-12-08T00:00:00')
     ",
-        vec![],
     )
     .await
     .unwrap();
 
-    db.exec(
+    db.execute(
         r"
-        INSERT INTO batches (id, reference, sku, purchased_quantity, eta) VALUES ('1', 'batch1', 'sku1', 100, NULL)
+        INSERT INTO batches (id, reference, sku, qty, eta, created_at, updated_at) VALUES ('1', 'batch1', 'sku1', 100, NULL, '2025-12-08T00:00:00', '2025-12-08T00:00:00')
     ",
-        vec![],
     )
     .await
     .unwrap();
 
-    db.exec(
+    db.execute(
         r"
         INSERT INTO allocations (id, order_line_id, batch_id, created_at, updated_at)
-        VALUES ('1', '1', '1', datetime('now'), datetime('now'))
+        VALUES ('1', '1', '1', '2025-12-08T00:00:00', '2025-12-08T00:00:00')
     ",
-        vec![],
     )
     .await
     .unwrap();
 
     // Retrieve allocations
-    let allocations: Vec<allocations::Allocation> =
-        allocations::Allocation::select_all(&db).await.unwrap();
+    let allocations =
+        read::<allocations::Allocation>(&db, &allocations::Allocation::select_sql(None))
+            .await
+            .unwrap();
 
-    let id = rbs::Value::from(allocations[0].order_line_id.clone());
+    let id = allocations[0].order_line_id.clone();
 
-    let order_lines = OrderLine::select_by_map(&db, id).await.unwrap();
+    let order_lines = read_one::<order_lines::OrderLine>(
+        &db,
+        &order_lines::OrderLine::select_sql(Some(&order_lines::OrderLine::where_eq("id", &id))),
+    )
+    .await
+    .unwrap();
 
     let expected = OrderLine {
         id: "1".to_string(),
         order_id: "order1".to_string(),
         sku: "sku1".to_string(),
         qty: 12,
-        created_at: chrono::Local::now().naive_local(),
-        updated_at: chrono::Local::now().naive_local(),
+        created_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
+            .unwrap()
+            .and_hms_opt(0, 0, 0)
+            .unwrap(),
+        updated_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
+            .unwrap()
+            .and_hms_opt(0, 0, 0)
+            .unwrap(),
     };
 
-    assert!(order_lines == vec![expected]);
+    assert!(order_lines == Some(expected));
 }

@@ -1,7 +1,10 @@
 use chrono::NaiveDateTime;
 use sql_derives::SqlTable;
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, SqlTable)]
+#[derive(
+    Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize, SqlTable, sqlx::FromRow,
+)]
+#[sql(table = "batches")]
 pub struct Batch {
     pub id: String,
     pub reference: String,
