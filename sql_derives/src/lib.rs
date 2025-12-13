@@ -200,7 +200,7 @@ pub fn sql_table(input: TokenStream) -> TokenStream {
                 vec![ #( #columns_list ),* ]
             }
 
-            pub fn select_sql(&self, where_clause: Option<&str>) -> String {
+            pub fn select_sql(where_clause: Option<&str>) -> String {
                 match where_clause {
                     Some(cond) => format!("SELECT {} FROM {} WHERE {}", #columns_literal, Self::table_name(), cond),
                     None => format!("SELECT {} FROM {} WHERE 1=1 ", #columns_literal, Self::table_name()),
@@ -237,7 +237,7 @@ pub fn sql_table(input: TokenStream) -> TokenStream {
                 }
             }
 
-            pub fn delete_sql(&self, where_clause: Option<&str>) -> String {
+            pub fn delete_sql(where_clause: Option<&str>) -> String {
                 match where_clause {
                     Some(cond) => format!("DELETE FROM {} WHERE {}", Self::table_name(), cond),
                     None => format!("DELETE FROM {} WHERE 1=1 ", Self::table_name()),

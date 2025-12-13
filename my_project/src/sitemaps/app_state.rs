@@ -1,5 +1,6 @@
 use crate::entities::ssm_codemap::SsmCodemap;
 use crate::entities::ssm_config::SsmConfig;
+use crate::repositories::read;
 use sqlx::AnyPool;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -53,7 +54,9 @@ pub async fn load_codemap(db: &AnyPool) -> HashMap<String, HashMap<String, Strin
     tracing::debug!("selecting codemap...");
 
     let mut codemap = HashMap::new();
-    /*let items: Vec<SsmCodemap> = SsmCodemap::select_all(db).await.unwrap();
+    let items: Vec<SsmCodemap> = read::<SsmCodemap>(db, SsmCodemap::select_sql(None))
+        .await
+        .unwrap();
     for item in items {
         let group = item.category;
         let key = item.code;
@@ -62,7 +65,7 @@ pub async fn load_codemap(db: &AnyPool) -> HashMap<String, HashMap<String, Strin
             .entry(group)
             .or_insert_with(HashMap::new)
             .insert(key, value);
-    }*/
+    }
     tracing::info!("codemap loaded: {:?}", codemap);
     codemap
 }
