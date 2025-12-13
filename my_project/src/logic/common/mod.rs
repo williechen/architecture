@@ -20,7 +20,7 @@ async fn get_cache(State(state): State<AppState>) -> Json<String> {
         created_at: Local::now().naive_local(),
         updated_at: Local::now().naive_local(),
     };
-    SsmCodemap::insert(&state.db, &codemap).await.ok();
+    //SsmCodemap::insert(&state.db, &codemap).await.ok();
 
     let data = state.codemap.read().await;
     let json_str = serde_json::to_string(&*data).unwrap_or_else(|_| "{}".to_string());

@@ -8,7 +8,8 @@ use axum::Router;
 use axum::http::StatusCode;
 use axum::http::{Request, Uri};
 use axum::response::IntoResponse;
-use sqlx::SqlitePool;
+use sqlx::AnyPool;
+
 use tower_http::compression::CompressionLayer;
 use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
@@ -19,7 +20,7 @@ use crate::logic;
 use crate::sitemaps::app_state::AppState;
 use crate::web_base::web_errors;
 
-pub async fn sitemap(db: SqlitePool) -> Router {
+pub async fn sitemap(db: AnyPool) -> Router {
     let app_state = AppState {
         db: db.clone(),
         codemap: Arc::new(RwLock::new(app_state::load_codemap(&db).await)),

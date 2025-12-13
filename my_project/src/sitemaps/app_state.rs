@@ -1,6 +1,6 @@
 use crate::entities::ssm_codemap::SsmCodemap;
 use crate::entities::ssm_config::SsmConfig;
-use sqlx::SqlitePool;
+use sqlx::AnyPool;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -9,7 +9,7 @@ use tokio_cron_scheduler::JobScheduler;
 
 #[derive(Debug, Clone)]
 pub struct AppState {
-    pub db: SqlitePool,
+    pub db: AnyPool,
     pub codemap: Arc<RwLock<HashMap<String, HashMap<String, String>>>>,
     pub config: Arc<RwLock<HashMap<String, HashMap<String, String>>>>,
 }
@@ -49,11 +49,11 @@ pub async fn load(state: AppState) {
     scheduler.start().await.unwrap();
 }
 
-pub async fn load_codemap(db: &SqlitePool) -> HashMap<String, HashMap<String, String>> {
+pub async fn load_codemap(db: &AnyPool) -> HashMap<String, HashMap<String, String>> {
     tracing::debug!("selecting codemap...");
 
     let mut codemap = HashMap::new();
-    let items: Vec<SsmCodemap> = SsmCodemap::select_all(db).await.unwrap();
+    /*let items: Vec<SsmCodemap> = SsmCodemap::select_all(db).await.unwrap();
     for item in items {
         let group = item.category;
         let key = item.code;
@@ -62,16 +62,16 @@ pub async fn load_codemap(db: &SqlitePool) -> HashMap<String, HashMap<String, St
             .entry(group)
             .or_insert_with(HashMap::new)
             .insert(key, value);
-    }
+    }*/
     tracing::info!("codemap loaded: {:?}", codemap);
     codemap
 }
 
-pub async fn load_config(db: &SqlitePool) -> HashMap<String, HashMap<String, String>> {
+pub async fn load_config(db: &AnyPool) -> HashMap<String, HashMap<String, String>> {
     tracing::info!("selecting config...");
 
     let mut config = HashMap::new();
-    let items: Vec<SsmConfig> = SsmConfig::select_all(db).await.unwrap();
+    /*let items: Vec<SsmConfig> = SsmConfig::select_all(db).await.unwrap();
     for item in items {
         let group = item.category;
         let key = item.code;
@@ -80,7 +80,7 @@ pub async fn load_config(db: &SqlitePool) -> HashMap<String, HashMap<String, Str
             .entry(group)
             .or_insert_with(HashMap::new)
             .insert(key, value);
-    }
+    }*/
     tracing::info!("config loaded: {:?}", config);
     config
 }
