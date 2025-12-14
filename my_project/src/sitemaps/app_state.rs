@@ -74,7 +74,9 @@ pub async fn load_config(db: &SqlitePool) -> HashMap<String, HashMap<String, Str
     tracing::info!("selecting config...");
 
     let mut config = HashMap::new();
-    /*let items: Vec<SsmConfig> = SsmConfig::select_all(db).await.unwrap();
+    let items: Vec<SsmConfig> = read::<SsmConfig>(db, &SsmConfig::select_sql(None))
+        .await
+        .unwrap();
     for item in items {
         let group = item.category;
         let key = item.code;
@@ -83,7 +85,7 @@ pub async fn load_config(db: &SqlitePool) -> HashMap<String, HashMap<String, Str
             .entry(group)
             .or_insert_with(HashMap::new)
             .insert(key, value);
-    }*/
+    }
     tracing::info!("config loaded: {:?}", config);
     config
 }
