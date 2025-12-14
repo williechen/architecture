@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use russh::{
     ChannelId,
@@ -9,25 +9,19 @@ use serde::{Deserialize, Serialize};
 use tracing::info;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SftpConfig {
-    pub host: Option<String>,
-    pub port: Option<u16>,
-    pub user: Option<String>,
-    pub pswd: Option<String>,
-}
+pub struct SftpConfig;
 
 impl SftpConfig {
-    pub async fn get_connection(&self) -> Option<SftpSession> {
+    pub async fn get_connection(opt: &HashMap<String, String>) -> Option<SftpSession> {
         let config = RusshConfig::default();
         let default_host = "localhost".to_string();
-        let host = self.host.as_ref().unwrap_or(&default_host);
-        let port = self.port.unwrap_or(22);
-
+        let host = opt.get("host").cloned().unwrap_or(default_host);
+        let port = opt.get("port").and_then(|p| p.parse().ok()).unwrap_or(22);
         let default_user = "root".to_string();
-        let user = self.user.as_ref().unwrap_or(&default_user);
+        let user = opt.get("user").cloned().unwrap_or(default_user);
 
         let default_pswd = "password".to_string();
-        let pswd = self.pswd.as_ref().unwrap_or(&default_pswd);
+        let pswd = opt.get("pswd").cloned().unwrap_or(default_pswd);
 
         let mut session =
             russh::client::connect(Arc::new(config), format!("{0}:{1}", host, port,), Client {})

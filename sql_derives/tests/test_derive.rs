@@ -28,7 +28,7 @@ fn test_sql_table_macro() {
         vec!["id", "user_name", "email", "created_at"]
     );
     assert_eq!(
-        user.select_sql(None),
+        UacUser::select_sql(None),
         "SELECT id, user_name, email, created_at FROM user WHERE 1=1 "
     );
     assert_eq!(

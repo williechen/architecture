@@ -16,19 +16,6 @@ level = "debug"
 log_directory = "logs/"
 file_prefix = "app"
 
-[sftp]
-host = "localhost"
-port = 22
-user = "willie"
-pswd = ""
-root = "/home/willie/"
-
-[mail]
-host = "smtp.gmail.com"
-port = 587
-user = "guan.yu456@gmail.com"
-pswd = ""
-
 [secret]
 jwt_secret = "your_jwt_secret_here"
 refresh_secret = "your_refresh_secret_here"
