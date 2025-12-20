@@ -2,6 +2,7 @@ pub mod app_state;
 mod csp_layer;
 
 use std::sync::Arc;
+use std::time::Duration;
 
 use axum::Router;
 use axum::http::StatusCode;
@@ -17,6 +18,8 @@ use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::{DefaultOnResponse, TraceLayer};
+use tower_sessions::cookie::time;
+use tower_sessions::{Expiry, MemoryStore, SessionManagerLayer};
 
 use crate::logic;
 use crate::sitemaps::app_state::AppState;
@@ -66,12 +69,19 @@ pub async fn sitemap(db: SqlitePool) -> Router {
         .on_request(())
         .on_response(DefaultOnResponse::new().level(tracing::Level::INFO));
 
+    let session_store = MemoryStore::default();
+
+    let session_layer = SessionManagerLayer::new(session_store)
+        .with_secure(false) // 開發用，prod 設 true + https
+        .with_expiry(Expiry::OnInactivity(time::Duration::days(7)));
+
     Router::new()
         .merge(logic::common::common_routes().await)
         .merge(logic::logic_routes().await)
         .nest_service("/plugins", ServeDir::new("static/"))
         .layer(trace)
         .layer(timeout)
+        .layer(session_layer)
         .layer(csp_layer)
         .layer(cors)
         .layer(compression)

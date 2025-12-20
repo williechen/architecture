@@ -49,6 +49,8 @@ tokio-cron-scheduler = "0.15"
 
 tower = "0.5"
 tower-http = { version = "0.6", features = ["full"] }
+tower-sessions = "0.14"
+tower-sessions-memory-store = "0.14"
 
 tracing = "0.1"
 tracing-appender = "0.2"

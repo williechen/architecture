@@ -7,12 +7,21 @@ use axum::Router;
 use axum::response::Html;
 use axum::routing::get;
 
+use crate::logic::authenticator::authenticator_layer;
 use crate::sitemaps::app_state::AppState;
 use crate::web_base::web_errors::WebError;
 
 pub async fn logic_routes() -> Router<AppState> {
+    let config = crate::tokens::jwt::JwtConfig::default();
+    let skip_paths = vec![
+        String::from("/login"),
+        String::from("/static/*"),
+        String::from("/plugins/*"),
+    ];
+
     Router::new()
         .route("/", get(home))
+        .route_layer(authenticator_layer(config, skip_paths))
         .route("/login", get(login))
 }
 

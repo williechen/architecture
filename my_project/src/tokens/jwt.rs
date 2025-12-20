@@ -28,7 +28,7 @@ pub struct JwtConfig {
 impl Default for JwtConfig {
     fn default() -> Self {
         JwtConfig {
-            secret: configures::get_config().secret.jwt_key(),
+            secret: configures::AppConfig::load().secret.jwt_key(),
             expiration: Duration::seconds(3600),
             audience: String::from("default_audience"),
             issuer: String::from("default_issuer"),
