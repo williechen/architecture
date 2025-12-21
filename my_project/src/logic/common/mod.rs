@@ -4,7 +4,7 @@ use crate::{entities::ssm_codemap::SsmCodemap, sitemaps::app_state::AppState};
 use axum::{Json, Router, extract::State, routing::get};
 use chrono::Local;
 
-pub async fn common_routes() -> Router<AppState> {
+pub fn common_routes() -> Router<AppState> {
     Router::new()
         .route("/cache", get(get_cache))
         .route("/health", get(health_check))

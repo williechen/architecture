@@ -10,6 +10,10 @@ pub enum ApiError {
     BadRequest(String),
     #[error("Field Error: {0}")]
     FieldError(String),
+    #[error("JWT Error: {0}")]
+    JWTError(#[from] jsonwebtoken::errors::Error),
+    #[error("Session Error: {0}")]
+    SessionError(#[from] tower_sessions::session::Error),
 }
 
 impl IntoResponse for ApiError {
@@ -21,6 +25,11 @@ impl IntoResponse for ApiError {
             }
             ApiError::BadRequest(msg) => (axum::http::StatusCode::BAD_REQUEST, msg),
             ApiError::FieldError(msg) => (axum::http::StatusCode::BAD_REQUEST, msg),
+            ApiError::JWTError(err) => (axum::http::StatusCode::BAD_REQUEST, err.to_string()),
+            ApiError::SessionError(err) => (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                err.to_string(),
+            ),
         };
 
         let body = serde_json::json!({

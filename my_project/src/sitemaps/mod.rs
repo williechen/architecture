@@ -80,8 +80,9 @@ pub async fn sitemap(db: SqlitePool) -> Router {
     let skip_paths = vec![String::from("/login"), String::from("/plugins/*")];
 
     Router::new()
-        .merge(logic::common::common_routes().await)
-        .merge(logic::logic_routes().await)
+        .merge(logic::uam::logic_routes())
+        .merge(logic::common::common_routes())
+        .merge(logic::logic_routes())
         .nest_service("/plugins", ServeDir::new("static/"))
         .layer(trace)
         .layer(timeout)

@@ -1,5 +1,6 @@
 pub mod common;
 pub mod security_from_req;
+pub mod uam;
 
 use askama::Template;
 use axum::Router;
@@ -9,7 +10,7 @@ use axum::routing::get;
 use crate::sitemaps::app_state::AppState;
 use crate::web_base::web_errors::WebError;
 
-pub async fn logic_routes() -> Router<AppState> {
+pub fn logic_routes() -> Router<AppState> {
     Router::new()
         .route("/", get(home))
         .route("/login", get(login))
