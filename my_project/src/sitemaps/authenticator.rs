@@ -46,9 +46,9 @@ fn is_permission(
         Ok(request)
     } else {
         if is_browser(&request) {
-            Err(Redirect::to("/login").into_response())
+            Err(Redirect::to("/404").into_response())
         } else {
-            Err(StatusCode::UNAUTHORIZED.into_response())
+            Err(StatusCode::FORBIDDEN.into_response())
         }
     }
 }
