@@ -77,7 +77,7 @@ pub async fn sitemap(db: SqlitePool) -> Router {
         .with_expiry(Expiry::OnInactivity(time::Duration::days(7)));
 
     let config = crate::tokens::jwt::JwtConfig::default();
-    let skip_paths = vec![String::from("/login"), String::from("/plugins/*")];
+    let skip_paths = vec![String::from("/login/*"), String::from("/plugins/*")];
 
     Router::new()
         .merge(logic::uam::logic_routes())
@@ -86,8 +86,8 @@ pub async fn sitemap(db: SqlitePool) -> Router {
         .nest_service("/plugins", ServeDir::new("static/"))
         .layer(trace)
         .layer(timeout)
-        .layer(session_layer)
         .layer(authenticator_layer(config, skip_paths))
+        .layer(session_layer)
         .layer(csp_layer)
         .layer(cors)
         .layer(compression)

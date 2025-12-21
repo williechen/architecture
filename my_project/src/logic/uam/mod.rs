@@ -5,6 +5,7 @@ use crate::{
 };
 use axum::{Form, Json, Router, routing::post};
 use serde::Deserialize;
+use tower_sessions::Session;
 
 pub fn logic_routes() -> Router<AppState> {
     Router::new().route("/login/auth", post(login_auth))
@@ -16,13 +17,18 @@ pub struct AuthVo {
     password: String,
 }
 
-pub async fn login_auth(Form(auth): Form<AuthVo>) -> Result<Json<String>, ApiError> {
+pub async fn login_auth(
+    session: Session,
+    Form(auth): Form<AuthVo>,
+) -> Result<Json<String>, ApiError> {
     let config = crate::tokens::jwt::JwtConfig::default();
     let jwt = JWT::new(config);
 
     let user = auth_user::User::new("some_id".to_string());
 
     let token = jwt.encode(user)?;
+
+    session.insert("token", token.clone()).await?;
 
     Ok(Json(format!(
         "Authenticated user: {}, password: {}, token: {}",

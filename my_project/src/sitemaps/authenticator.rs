@@ -8,6 +8,7 @@ use axum::{
     response::Redirect,
 };
 use tower_http::auth::{AsyncAuthorizeRequest, AsyncRequireAuthorizationLayer};
+use tower_sessions::Session;
 
 use crate::tokens::auth_perm::{self, Permission};
 use crate::tokens::jwt::{JWT, JwtConfig};
@@ -15,7 +16,7 @@ use crate::tokens::jwt::{JWT, JwtConfig};
 fn should_skip(path: &str, skips: &[String]) -> bool {
     skips.iter().any(|p| {
         if p.ends_with('*') {
-            path.starts_with(p.trim_end_matches('*'))
+            path.starts_with(p.trim_end_matches("/*"))
         } else {
             path == p
         }
@@ -85,6 +86,21 @@ impl AsyncAuthorizeRequest<Body> for JwtToken {
         }
 
         Box::pin(async move {
+            let session = request.extensions().get::<Session>().cloned();
+
+            if let Some(session) = session {
+                // 例如：login user id
+                let token_str: Option<String> = session.get("token").await.unwrap();
+                if let Some(token_str) = token_str {
+                    let token_valid = jwt.decode::<auth_perm::Permission>(&token_str);
+                    if token_valid.is_ok() {
+                        let permission = token_valid.unwrap();
+                        request.extensions_mut().insert(permission.clone());
+                        return is_permission(&path, &permission, request);
+                    }
+                }
+            }
+
             let auth_header = request
                 .headers()
                 .get("Authorization")
@@ -98,24 +114,6 @@ impl AsyncAuthorizeRequest<Body> for JwtToken {
                         let permission = token_valid.unwrap();
                         request.extensions_mut().insert(permission.clone());
                         return is_permission(&path, &permission, request);
-                    }
-                }
-            } else {
-                // Check for token in cookies
-                if let Some(cookie_header) = request.headers().get("Cookie") {
-                    if let Ok(cookie_str) = cookie_header.to_str() {
-                        for cookie in cookie_str.split(';') {
-                            let cookie = cookie.trim();
-                            if cookie.starts_with("auth_token=") {
-                                let token_str = &cookie["auth_token=".len()..];
-                                let token_valid = jwt.decode::<auth_perm::Permission>(token_str);
-                                if token_valid.is_ok() {
-                                    let permission = token_valid.unwrap();
-                                    request.extensions_mut().insert(permission.clone());
-                                    return is_permission(&path, &permission, request);
-                                }
-                            }
-                        }
                     }
                 }
             }
