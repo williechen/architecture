@@ -1,8 +1,8 @@
 pub mod app_state;
+mod authenticator;
 mod csp_layer;
 
 use std::sync::Arc;
-use std::time::Duration;
 
 use axum::Router;
 use axum::http::StatusCode;
@@ -23,6 +23,7 @@ use tower_sessions::{Expiry, MemoryStore, SessionManagerLayer};
 
 use crate::logic;
 use crate::sitemaps::app_state::AppState;
+use crate::sitemaps::authenticator::authenticator_layer;
 use crate::web_base::web_errors;
 
 pub async fn sitemap(db: SqlitePool) -> Router {
@@ -75,6 +76,9 @@ pub async fn sitemap(db: SqlitePool) -> Router {
         .with_secure(false) // 開發用，prod 設 true + https
         .with_expiry(Expiry::OnInactivity(time::Duration::days(7)));
 
+    let config = crate::tokens::jwt::JwtConfig::default();
+    let skip_paths = vec![String::from("/login"), String::from("/plugins/*")];
+
     Router::new()
         .merge(logic::common::common_routes().await)
         .merge(logic::logic_routes().await)
@@ -82,6 +86,7 @@ pub async fn sitemap(db: SqlitePool) -> Router {
         .layer(trace)
         .layer(timeout)
         .layer(session_layer)
+        .layer(authenticator_layer(config, skip_paths))
         .layer(csp_layer)
         .layer(cors)
         .layer(compression)

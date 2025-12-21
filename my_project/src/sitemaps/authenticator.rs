@@ -7,9 +7,9 @@ use axum::{
     http::{Request, Response},
     response::Redirect,
 };
-use serde::{Deserialize, Serialize};
 use tower_http::auth::{AsyncAuthorizeRequest, AsyncRequireAuthorizationLayer};
 
+use crate::tokens::auth_perm::{self, Permission};
 use crate::tokens::jwt::{JWT, JwtConfig};
 
 fn should_skip(path: &str, skips: &[String]) -> bool {
@@ -30,33 +30,26 @@ fn is_browser(req: &Request<Body>) -> bool {
         .unwrap_or(false)
 }
 
-async fn get_user_acl(db: &sqlx::SqlitePool, user_id: String) -> Vec<String> {
-    let sql = format!(
-        "SELECT acl_code
-             FROM uam_acl ua
-             JOIN uam_role_acl ura 
-               ON ua.acl_code = ura.acl_code
-             JOIN uam_user_role uur
-               ON ura.role_code = uur.role_code
-            WHERE user_id = '{}'
-        ",
-        user_id
-    );
+fn is_permission(
+    path: &str,
+    permission: &Permission,
+    request: Request<Body>,
+) -> Result<Request<Body>, Response<Body>> {
+    let newpermission = permission.build();
 
-    let acl_codes: Vec<String> = sqlx::query_as::<_, (String,)>(&sql)
-        .fetch_all(db)
-        .await
-        .unwrap_or_default()
-        .into_iter()
-        .map(|row| row.0)
-        .collect();
-
-    acl_codes
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Authorization {
-    pub user_id: String,
+    if newpermission.has_api_module_perms(path)
+        || newpermission.has_web_module_perms(path)
+        || newpermission.has_api_perm(path)
+        || newpermission.has_web_perm(path)
+    {
+        Ok(request)
+    } else {
+        if is_browser(&request) {
+            Err(Redirect::to("/login").into_response())
+        } else {
+            Err(StatusCode::UNAUTHORIZED.into_response())
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -100,10 +93,11 @@ impl AsyncAuthorizeRequest<Body> for JwtToken {
             if let Some(auth_value) = auth_header {
                 if auth_value.starts_with("Bearer ") {
                     let token_str = &auth_value[7..];
-                    let token_valid = jwt.decode::<Authorization>(token_str);
+                    let token_valid = jwt.decode::<auth_perm::Permission>(token_str);
                     if token_valid.is_ok() {
-                        request.extensions_mut().insert(token_valid.unwrap());
-                        return Ok(request);
+                        let permission = token_valid.unwrap();
+                        request.extensions_mut().insert(permission.clone());
+                        return is_permission(&path, &permission, request);
                     }
                 }
             } else {
@@ -114,10 +108,11 @@ impl AsyncAuthorizeRequest<Body> for JwtToken {
                             let cookie = cookie.trim();
                             if cookie.starts_with("auth_token=") {
                                 let token_str = &cookie["auth_token=".len()..];
-                                let token_valid = jwt.decode::<Authorization>(token_str);
+                                let token_valid = jwt.decode::<auth_perm::Permission>(token_str);
                                 if token_valid.is_ok() {
-                                    request.extensions_mut().insert(token_valid.unwrap());
-                                    return Ok(request);
+                                    let permission = token_valid.unwrap();
+                                    request.extensions_mut().insert(permission.clone());
+                                    return is_permission(&path, &permission, request);
                                 }
                             }
                         }
