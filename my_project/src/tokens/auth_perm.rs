@@ -28,11 +28,11 @@ impl Permission {
     pub fn build(&self) -> Self {
         Permission {
             id: self.id.clone(),
-            web_permissions: self.web_permissions.clone(),
-            api_permissions: self.api_permissions.clone(),
+            web_permissions: Some(vec!["/".to_string()]),
+            api_permissions: Some(vec!["/".to_string()]),
             is_active: self.is_active,
             is_superuser: self.is_superuser,
-            last_login: self.last_login,
+            last_login: Some(Utc::now()),
         }
     }
 
