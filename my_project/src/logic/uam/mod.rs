@@ -3,7 +3,7 @@ use crate::{
     sitemaps::app_state::AppState,
     tokens::{auth_user, jwt::JWT},
 };
-use axum::{Form, Json, Router, routing::post};
+use axum::{Form, Json, Router, extract::State, routing::post};
 use serde::Deserialize;
 use tower_sessions::Session;
 
@@ -18,6 +18,7 @@ pub struct AuthVo {
 }
 
 pub async fn login_auth(
+    State(app_state): State<AppState>,
     session: Session,
     Form(auth): Form<AuthVo>,
 ) -> Result<Json<String>, ApiError> {

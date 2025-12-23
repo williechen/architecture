@@ -38,11 +38,7 @@ fn is_permission(
 ) -> Result<Request<Body>, Response<Body>> {
     let newpermission = permission.build();
 
-    if newpermission.has_api_module_perms(path)
-        || newpermission.has_web_module_perms(path)
-        || newpermission.has_api_perm(path)
-        || newpermission.has_web_perm(path)
-    {
+    if newpermission.has_api_perm(path) || newpermission.has_web_perm(path) {
         Ok(request)
     } else {
         if is_browser(&request) {

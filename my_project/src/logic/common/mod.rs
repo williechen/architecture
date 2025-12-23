@@ -1,6 +1,8 @@
 use std::process::Command;
 
-use crate::{entities::ssm_codemap::SsmCodemap, sitemaps::app_state::AppState};
+use crate::{
+    entities::ssm_codemap::SsmCodemap, repositories::create, sitemaps::app_state::AppState,
+};
 use axum::{Json, Router, extract::State, routing::get};
 use chrono::Local;
 
@@ -20,7 +22,7 @@ async fn get_cache(State(state): State<AppState>) -> Json<String> {
         created_at: Local::now().naive_local(),
         updated_at: Local::now().naive_local(),
     };
-    //SsmCodemap::insert(&state.db, &codemap).await.ok();
+    create(&state.db, &codemap.insert_sql()).await.unwrap();
 
     let data = state.codemap.read().await;
     let json_str = serde_json::to_string(&*data).unwrap_or_else(|_| "{}".to_string());

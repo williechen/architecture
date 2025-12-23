@@ -50,23 +50,7 @@ impl Permission {
         }
 
         if let Some(permissions) = &self.web_permissions {
-            permissions.contains(&perm.to_string())
-        } else {
-            false
-        }
-    }
-
-    pub fn has_web_module_perms(&self, module: &str) -> bool {
-        if self.is_active.unwrap_or(false) {
-            return false;
-        }
-
-        if self.is_superuser.unwrap_or(false) {
-            return true;
-        }
-
-        if let Some(permissions) = &self.web_permissions {
-            permissions.iter().any(|perm| perm.starts_with(module))
+            permissions.iter().any(|p| perm.starts_with(p))
         } else {
             false
         }
@@ -82,23 +66,7 @@ impl Permission {
         }
 
         if let Some(permissions) = &self.api_permissions {
-            permissions.contains(&perm.to_string())
-        } else {
-            false
-        }
-    }
-
-    pub fn has_api_module_perms(&self, module: &str) -> bool {
-        if self.is_active.unwrap_or(false) {
-            return false;
-        }
-
-        if self.is_superuser.unwrap_or(false) {
-            return true;
-        }
-
-        if let Some(permissions) = &self.api_permissions {
-            permissions.iter().any(|perm| perm.starts_with(module))
+            permissions.iter().any(|p| perm.starts_with(p))
         } else {
             false
         }
