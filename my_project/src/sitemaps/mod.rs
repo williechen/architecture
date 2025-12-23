@@ -20,7 +20,10 @@ use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::{DefaultOnResponse, TraceLayer};
 use tower_sessions::cookie::time;
 use tower_sessions::{Expiry, MemoryStore, SessionManagerLayer};
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
+use crate::api_base::api_doc::ApiDoc;
 use crate::logic;
 use crate::sitemaps::app_state::AppState;
 use crate::sitemaps::authenticator::authenticator_layer;
@@ -77,12 +80,22 @@ pub async fn sitemap(db: SqlitePool) -> Router {
         .with_expiry(Expiry::OnInactivity(time::Duration::days(7)));
 
     let config = crate::tokens::jwt::JwtConfig::default();
-    let skip_paths = vec![String::from("/login/*"), String::from("/plugins/*")];
+    let skip_paths = vec![
+        String::from("/login/*"),
+        String::from("/health"),
+        String::from("/plugins/*"),
+        String::from("/swagger/*"),
+        String::from("/api-doc/*"),
+    ];
 
     Router::new()
         .merge(logic::uam::logic_routes())
         .merge(logic::common::common_routes())
         .merge(logic::logic_routes())
+        .merge(
+            SwaggerUi::new("/swagger") // 用於 UI 的 endpoint
+                .url("/api-doc/openapi.json", ApiDoc::openapi()), // 提供 openapi.json 的路徑與內容
+        )
         .nest_service("/plugins", ServeDir::new("static/"))
         .layer(trace)
         .layer(timeout)

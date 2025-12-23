@@ -1,22 +1,19 @@
 // TODO SWAGGER:Auto-generate this file!
 
+use crate::logic::common;
+
+use utoipa::OpenApi;
 #[derive(OpenApi)]
 #[openapi(
     paths(
-        crate::handlers::create_user,
-        crate::handlers::login,
-        crate::handlers::get_user,
-        crate::handlers::list_users,
-        crate::handlers::update_user,
-        crate::handlers::delete_user,
-        crate::handlers::myid,
+        common::get_cache,
+        common::health_check,
     ),
     components(
-        schemas(UserResponse, CreateUser, UpdateUser, LoginRequest)
+        schemas(),
     ),
     tags(
-        (name = "users", description = "User management endpoints"),
-        (name = "auth", description = "Authentication endpoints")
+        (name = "common", description = "Common API endpoints"),
     )
 )]
 pub struct ApiDoc;

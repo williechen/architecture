@@ -12,7 +12,15 @@ pub fn common_routes() -> Router<AppState> {
         .route("/health", get(health_check))
 }
 
-async fn get_cache(State(state): State<AppState>) -> Json<String> {
+#[utoipa::path(
+    get,
+    path = "/cache",
+    tag = "common",
+    responses(
+        (status = 200, description = "Cache Created", body = String),
+    )
+)]
+pub async fn get_cache(State(state): State<AppState>) -> Json<String> {
     let codemap = SsmCodemap {
         id: xid::new().to_string(),
         category: "example".to_string(),
@@ -29,7 +37,15 @@ async fn get_cache(State(state): State<AppState>) -> Json<String> {
     Json(json_str)
 }
 
-async fn health_check() -> Json<String> {
+#[utoipa::path(
+    get,
+    path = "/health",
+    tag = "common",
+    responses(
+        (status = 200, description = "Health Check OK", body = String),
+    )
+)]
+pub async fn health_check() -> Json<String> {
     // -------------------------
     // 1. Semantic Version
     // -------------------------
