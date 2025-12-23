@@ -32,7 +32,7 @@ pub async fn sitemap(db: SqlitePool) -> Router {
         codemap: Arc::new(RwLock::new(app_state::load_codemap(&db).await)),
         config: Arc::new(RwLock::new(app_state::load_config(&db).await)),
     };
-    app_state::load(app_state.clone()).await;
+    app_state::load(&app_state).await;
 
     let compression = CompressionLayer::new();
 
@@ -86,7 +86,7 @@ pub async fn sitemap(db: SqlitePool) -> Router {
         .nest_service("/plugins", ServeDir::new("static/"))
         .layer(trace)
         .layer(timeout)
-        .layer(authenticator_layer(config, skip_paths))
+        .layer(authenticator_layer(config, skip_paths, app_state.clone()))
         .layer(session_layer)
         .layer(csp_layer)
         .layer(cors)

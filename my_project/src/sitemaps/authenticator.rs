@@ -10,6 +10,7 @@ use axum::{
 use tower_http::auth::{AsyncAuthorizeRequest, AsyncRequireAuthorizationLayer};
 use tower_sessions::Session;
 
+use crate::sitemaps::app_state::AppState;
 use crate::tokens::auth_perm::{self, Permission};
 use crate::tokens::jwt::{JWT, JwtConfig};
 
@@ -34,9 +35,10 @@ fn is_browser(req: &Request<Body>) -> bool {
 fn is_permission(
     path: &str,
     permission: &Permission,
+    db: &sqlx::SqlitePool,
     request: Request<Body>,
 ) -> Result<Request<Body>, Response<Body>> {
-    let newpermission = permission.build();
+    let newpermission = permission.build(db);
 
     if newpermission.has_api_perm(path) || newpermission.has_web_perm(path) {
         Ok(request)
@@ -53,12 +55,17 @@ fn is_permission(
 pub struct JwtToken {
     pub token: JWT,
     pub skip_paths: Vec<String>,
+    pub state: AppState,
 }
 
 impl JwtToken {
-    pub fn new(config: JwtConfig, skip_paths: Vec<String>) -> Self {
+    pub fn new(config: JwtConfig, skip_paths: Vec<String>, state: AppState) -> Self {
         let token = JWT::new(config);
-        JwtToken { token, skip_paths }
+        JwtToken {
+            token,
+            skip_paths,
+            state,
+        }
     }
 }
 
@@ -75,6 +82,7 @@ impl AsyncAuthorizeRequest<Body> for JwtToken {
     fn authorize(&mut self, mut request: Request<Body>) -> Self::Future {
         let path = request.uri().path().to_string();
         let jwt = self.token.clone();
+        let db = self.state.db.clone();
 
         // 🚪 排除路徑 → 直接放行
         if should_skip(&path, &self.skip_paths) {
@@ -92,7 +100,7 @@ impl AsyncAuthorizeRequest<Body> for JwtToken {
                     if token_valid.is_ok() {
                         let permission = token_valid.unwrap();
                         request.extensions_mut().insert(permission.clone());
-                        return is_permission(&path, &permission, request);
+                        return is_permission(&path, &permission, &db, request);
                     }
                 }
             }
@@ -109,7 +117,7 @@ impl AsyncAuthorizeRequest<Body> for JwtToken {
                     if token_valid.is_ok() {
                         let permission = token_valid.unwrap();
                         request.extensions_mut().insert(permission.clone());
-                        return is_permission(&path, &permission, request);
+                        return is_permission(&path, &permission, &db, request);
                     }
                 }
             }
@@ -126,6 +134,7 @@ impl AsyncAuthorizeRequest<Body> for JwtToken {
 pub fn authenticator_layer(
     config: JwtConfig,
     skip_paths: Vec<String>,
+    state: AppState,
 ) -> AsyncRequireAuthorizationLayer<JwtToken> {
-    AsyncRequireAuthorizationLayer::new(JwtToken::new(config, skip_paths))
+    AsyncRequireAuthorizationLayer::new(JwtToken::new(config, skip_paths, state))
 }

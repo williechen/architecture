@@ -14,6 +14,8 @@ pub enum ApiError {
     JWTError(#[from] jsonwebtoken::errors::Error),
     #[error("Session Error: {0}")]
     SessionError(#[from] tower_sessions::session::Error),
+    #[error("Database Error: {0}")]
+    DatabaseError(#[from] sqlx::Error),
 }
 
 impl IntoResponse for ApiError {
@@ -27,6 +29,10 @@ impl IntoResponse for ApiError {
             ApiError::FieldError(msg) => (axum::http::StatusCode::BAD_REQUEST, msg),
             ApiError::JWTError(err) => (axum::http::StatusCode::BAD_REQUEST, err.to_string()),
             ApiError::SessionError(err) => (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                err.to_string(),
+            ),
+            ApiError::DatabaseError(err) => (
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,
                 err.to_string(),
             ),

@@ -25,7 +25,9 @@ impl Default for Permission {
 }
 
 impl Permission {
-    pub fn build(&self) -> Self {
+    pub fn build(&self, _db: &sqlx::SqlitePool) -> Self {
+        // TODO Permissions
+
         Permission {
             id: self.id.clone(),
             web_permissions: Some(vec!["/".to_string()]),
