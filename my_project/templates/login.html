@@ -1,5 +1,8 @@
-login
+{% extends "layout/main.html" %} 
 
+{% block title %}login{% endblock %} 
+
+{% block content %}
 <form method="post" action="/login/auth">
   <label for="username">Username:</label>
   <input type="text" id="username" name="username" required />
@@ -9,3 +12,4 @@ login
   <br />
   <button type="submit">Login</button>
 </form>
+{% endblock %}

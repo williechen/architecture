@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %} - My Site{% endblock %}</title>
+    {% include "layout/media.html" %} 
+    {% block media %}{% endblock %}
+  </head>
+  <body>
+    <header></header>
+    <nav></nav>
+    <main>
+      <aside></aside>
+      <section></section>
+      <article>
+        {% block content %}
+        <p>Placeholder content</p>
+        {% endblock %}
+      </article>
+    </main>
+    <footer></footer>
+    {% include "layout/script.html" %} 
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

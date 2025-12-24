@@ -83,7 +83,7 @@ pub async fn sitemap(db: SqlitePool) -> Router {
     let skip_paths = vec![
         String::from("/login/*"),
         String::from("/health"),
-        String::from("/plugins/*"),
+        String::from("/assets/*"),
         String::from("/swagger/*"),
         String::from("/api-doc/*"),
     ];
@@ -96,7 +96,7 @@ pub async fn sitemap(db: SqlitePool) -> Router {
             SwaggerUi::new("/swagger") // 用於 UI 的 endpoint
                 .url("/api-doc/openapi.json", ApiDoc::openapi()), // 提供 openapi.json 的路徑與內容
         )
-        .nest_service("/plugins", ServeDir::new("static/"))
+        .nest_service("/assets", ServeDir::new("assets"))
         .layer(trace)
         .layer(timeout)
         .layer(authenticator_layer(config, skip_paths, app_state.clone()))

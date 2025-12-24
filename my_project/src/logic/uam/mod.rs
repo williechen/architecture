@@ -1,7 +1,7 @@
 use crate::{
     api_base::api_errors::ApiError,
     entities::uam_user::UamUser,
-    repositories::{create, read, read_one},
+    repositories::{create, read_one},
     sitemaps::app_state::AppState,
     tokens::{auth_user, jwt::JWT},
 };
