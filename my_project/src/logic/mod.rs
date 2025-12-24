@@ -1,5 +1,4 @@
 pub mod common;
-pub mod security_from_req;
 pub mod uam;
 
 use askama::Template;

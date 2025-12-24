@@ -1,4 +1,4 @@
-use architecture::chapter2::sync;
+use architecture::chapter2;
 
 #[test]
 fn test_sync() {
@@ -18,7 +18,7 @@ fn test_sync() {
     std::fs::write(format!("{}/file3.txt", target), "Rust Programming").unwrap();
 
     // Perform sync
-    sync::sync(source, target);
+    chapter2::sync(source, target);
 
     // Verify results
     assert!(std::path::Path::new(&format!("{}/file1.txt", target)).exists());

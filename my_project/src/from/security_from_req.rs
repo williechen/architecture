@@ -1,6 +1,6 @@
 use axum::body::Bytes;
 use axum::extract::{FromRequest, Request};
-use axum::http::{HeaderMap, header};
+use axum::http::HeaderMap;
 use base64::Engine;
 use serde::de::DeserializeOwned;
 
@@ -44,13 +44,9 @@ where
 }
 
 fn json_content_type(headers: &HeaderMap) -> bool {
-    let Some(content_type) = headers.get(header::CONTENT_TYPE) else {
-        return false;
-    };
-
-    let Ok(content_type) = content_type.to_str() else {
-        return false;
-    };
-
-    content_type.starts_with("application/json")
+    headers
+        .get("Accept")
+        .and_then(|v| v.to_str().ok())
+        .map(|v| v.contains("application/json"))
+        .unwrap_or(false)
 }

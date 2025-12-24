@@ -10,9 +10,9 @@ use axum::{
 use tower_http::auth::{AsyncAuthorizeRequest, AsyncRequireAuthorizationLayer};
 use tower_sessions::Session;
 
+use crate::auth::auth_jwt::{JWT, JwtConfig};
+use crate::auth::auth_perm::{self, Permission};
 use crate::sitemaps::app_state::AppState;
-use crate::tokens::auth_perm::{self, Permission};
-use crate::tokens::jwt::{JWT, JwtConfig};
 
 fn should_skip(path: &str, skips: &[String]) -> bool {
     skips.iter().any(|p| {

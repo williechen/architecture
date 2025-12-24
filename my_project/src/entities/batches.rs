@@ -2,7 +2,7 @@ use chrono::NaiveDateTime;
 use sql_derives::SqlTable;
 
 #[derive(
-    Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize, SqlTable, sqlx::FromRow,
+    Clone, Debug, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, SqlTable, sqlx::FromRow,
 )]
 #[sql(table = "batches")]
 pub struct Batch {

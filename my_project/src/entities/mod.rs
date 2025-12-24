@@ -1,6 +1,5 @@
 pub mod allocations;
 pub mod batches;
-pub mod fake;
 pub mod order_lines;
 pub mod ssm_codemap;
 pub mod ssm_config;

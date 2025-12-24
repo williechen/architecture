@@ -79,7 +79,7 @@ pub async fn sitemap(db: SqlitePool) -> Router {
         .with_secure(false) // 開發用，prod 設 true + https
         .with_expiry(Expiry::OnInactivity(time::Duration::days(7)));
 
-    let config = crate::tokens::jwt::JwtConfig::default();
+    let config = crate::auth::auth_jwt::JwtConfig::default();
     let skip_paths = vec![
         String::from("/login/*"),
         String::from("/health"),
@@ -96,7 +96,7 @@ pub async fn sitemap(db: SqlitePool) -> Router {
             SwaggerUi::new("/swagger") // 用於 UI 的 endpoint
                 .url("/api-doc/openapi.json", ApiDoc::openapi()), // 提供 openapi.json 的路徑與內容
         )
-        .nest_service("/assets", ServeDir::new("assets"))
+        .nest_service("/assets", ServeDir::new("my_project/assets"))
         .layer(trace)
         .layer(timeout)
         .layer(authenticator_layer(config, skip_paths, app_state.clone()))

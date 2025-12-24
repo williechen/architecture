@@ -1,6 +1,6 @@
 use architecture::repositories::{create, read_one, read_to_json};
 use architecture::{
-    chapter1::model,
+    chapter1,
     entities::{allocations::Allocation, batches::Batch, order_lines::OrderLine},
 };
 use chrono::Local;
@@ -123,8 +123,8 @@ async fn test_repository_can_retrieve_a_batch_with_allocations() {
     .await
     .unwrap();
 
-    let expected = model::Batch::new("batch1", "GENERIC-SOFA", 100, None);
-    let expected_order = model::OrderLine {
+    let expected = chapter1::Batch::new("batch1", "GENERIC-SOFA", 100, None);
+    let expected_order = chapter1::OrderLine {
         order_id: "order1".to_string(),
         sku: "GENERIC-SOFA".to_string(),
         qty: 12,

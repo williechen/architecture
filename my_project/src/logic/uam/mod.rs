@@ -1,9 +1,9 @@
 use crate::{
     api_base::api_errors::ApiError,
+    auth::{auth_jwt::JWT, auth_user},
     entities::uam_user::UamUser,
     repositories::{create, read_one},
     sitemaps::app_state::AppState,
-    tokens::{auth_user, jwt::JWT},
 };
 use axum::{Form, Json, Router, extract::State, routing::post};
 use chrono::Utc;
@@ -27,7 +27,7 @@ pub async fn login_auth(
     session: Session,
     Form(auth): Form<AuthVo>,
 ) -> Result<Json<String>, ApiError> {
-    let config = crate::tokens::jwt::JwtConfig::default();
+    let config = crate::auth::auth_jwt::JwtConfig::default();
     let jwt = JWT::new(config);
 
     let uam_user = read_one::<UamUser>(
