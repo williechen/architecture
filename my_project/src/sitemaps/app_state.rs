@@ -54,7 +54,8 @@ pub async fn load_codemap(db: &SqlitePool) -> HashMap<String, HashMap<String, St
     tracing::debug!("selecting codemap...");
 
     let mut codemap = HashMap::new();
-    let items: Vec<SsmCodemap> = read::<SsmCodemap>(db, &SsmCodemap::select_sql(None))
+
+    let items: Vec<SsmCodemap> = read::<&SqlitePool, SsmCodemap>(db, &SsmCodemap::select_sql(None))
         .await
         .unwrap();
     for item in items {
@@ -74,7 +75,7 @@ pub async fn load_config(db: &SqlitePool) -> HashMap<String, HashMap<String, Str
     tracing::info!("selecting config...");
 
     let mut config = HashMap::new();
-    let items: Vec<SsmConfig> = read::<SsmConfig>(db, &SsmConfig::select_sql(None))
+    let items: Vec<SsmConfig> = read::<&SqlitePool, SsmConfig>(db, &SsmConfig::select_sql(None))
         .await
         .unwrap();
     for item in items {

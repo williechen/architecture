@@ -6,7 +6,6 @@ use serde_json::Map;
 use serde_json::Value as JsonValue;
 use sqlx::Column;
 use sqlx::Row;
-use sqlx::SqlitePool;
 use sqlx::Value; // ★ 必須
 use sqlx::ValueRef;
 use sqlx::sqlite::SqliteQueryResult;
@@ -57,7 +56,10 @@ fn decode_any_value(raw: SqliteValue) -> JsonValue {
 }
 
 /// 主函式：執行任意 SQL，將每一列轉成 serde_json::Value（動態欄位）
-pub async fn read_to_json(pool: &SqlitePool, sql: &str) -> Result<Vec<JsonValue>, sqlx::Error> {
+pub async fn read_to_json<'a, E>(pool: E, sql: &str) -> Result<Vec<JsonValue>, sqlx::Error>
+where
+    E: sqlx::Executor<'a, Database = sqlx::Sqlite> + Copy,
+{
     let rows = sqlx::query(sql).fetch_all(pool).await?;
 
     let mut out = Vec::with_capacity(rows.len());
@@ -79,10 +81,10 @@ pub async fn read_to_json(pool: &SqlitePool, sql: &str) -> Result<Vec<JsonValue>
     Ok(out)
 }
 
-pub async fn read_one_to_json(
-    pool: &SqlitePool,
-    sql: &str,
-) -> Result<Option<JsonValue>, sqlx::Error> {
+pub async fn read_one_to_json<'a, E>(pool: E, sql: &str) -> Result<Option<JsonValue>, sqlx::Error>
+where
+    E: sqlx::Executor<'a, Database = sqlx::Sqlite> + Copy,
+{
     let row_opt = sqlx::query(sql).fetch_optional(pool).await?;
 
     if let Some(row) = row_opt {
@@ -101,33 +103,44 @@ pub async fn read_one_to_json(
     }
 }
 
-pub async fn read<T>(pool: &SqlitePool, sql: &str) -> Result<Vec<T>, sqlx::Error>
+pub async fn read<'a, E, T>(pool: E, sql: &str) -> Result<Vec<T>, sqlx::Error>
 where
+    E: sqlx::Executor<'a, Database = sqlx::Sqlite>,
     T: for<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> + Send + Unpin,
 {
     let rows: Vec<T> = sqlx::query_as(sql).fetch_all(pool).await?;
     Ok(rows)
 }
 
-pub async fn read_one<T>(pool: &SqlitePool, sql: &str) -> Result<Option<T>, sqlx::Error>
+pub async fn read_one<'a, E, T>(pool: E, sql: &str) -> Result<Option<T>, sqlx::Error>
 where
+    E: sqlx::Executor<'a, Database = sqlx::Sqlite>,
     T: for<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> + Send + Unpin,
 {
     let row_opt: Option<T> = sqlx::query_as(sql).fetch_optional(pool).await?;
     Ok(row_opt)
 }
 
-pub async fn create(pool: &SqlitePool, sql: &str) -> Result<SqliteQueryResult, sqlx::Error> {
+pub async fn create<'a, E>(pool: E, sql: &str) -> Result<SqliteQueryResult, sqlx::Error>
+where
+    E: sqlx::Executor<'a, Database = sqlx::Sqlite>,
+{
     let query_result = sqlx::query(sql).execute(pool).await?;
     Ok(query_result)
 }
 
-pub async fn update(pool: &SqlitePool, sql: &str) -> Result<SqliteQueryResult, sqlx::Error> {
+pub async fn update<'a, E>(pool: E, sql: &str) -> Result<SqliteQueryResult, sqlx::Error>
+where
+    E: sqlx::Executor<'a, Database = sqlx::Sqlite>,
+{
     let query_result = sqlx::query(sql).execute(pool).await?;
     Ok(query_result)
 }
 
-pub async fn delete(pool: &SqlitePool, sql: &str) -> Result<SqliteQueryResult, sqlx::Error> {
+pub async fn delete<'a, E>(pool: E, sql: &str) -> Result<SqliteQueryResult, sqlx::Error>
+where
+    E: sqlx::Executor<'a, Database = sqlx::Sqlite>,
+{
     let query_result = sqlx::query(sql).execute(pool).await?;
     Ok(query_result)
 }

@@ -89,7 +89,7 @@ async fn test_repository_can_save_a_batch() {
 
     create(&db, &batch.insert_sql()).await.unwrap();
 
-    let fetched_batch = read_one::<Batch>(&db, &Batch::select_sql(None))
+    let fetched_batch = read_one::<&SqlitePool, Batch>(&db, &Batch::select_sql(None))
         .await
         .unwrap();
 
@@ -110,13 +110,13 @@ async fn test_repository_can_retrieve_a_batch_with_allocations() {
     insert_batch(&db, "batch2".to_string()).await;
     insert_allocation(&db, order_line_id.clone(), batch_id.clone()).await;
 
-    let fetched_batch = read_one::<Batch>(
+    let fetched_batch = read_one::<&SqlitePool, Batch>(
         &db,
         &Batch::select_sql(Some(&format!("id = '{}'", batch_id))),
     )
     .await
     .unwrap();
-    let fetched_order_line = read_one::<OrderLine>(
+    let fetched_order_line = read_one::<&SqlitePool, OrderLine>(
         &db,
         &OrderLine::select_sql(Some(&format!("id = '{}'", order_line_id))),
     )

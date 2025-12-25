@@ -6,7 +6,7 @@ use architecture::{
     repositories::create,
 };
 use chrono::{NaiveDate, NaiveDateTime, Utc};
-use sqlx::SqlitePool;
+use sqlx::{Sqlite, Transaction};
 
 fn random_suffix() -> String {
     xid::new().to_string()[..6].to_string()
@@ -25,7 +25,7 @@ fn random_order_id(name: &str) -> String {
 }
 
 async fn add_stock(
-    db: &SqlitePool,
+    db: &mut Transaction<'_, Sqlite>,
     datas: Vec<(&str, &str, u32, Option<NaiveDateTime>)>,
 ) -> (HashSet<String>, HashSet<String>) {
     let mut skus = HashSet::new();
@@ -42,7 +42,7 @@ async fn add_stock(
             updated_at: Utc::now().naive_utc(),
         };
 
-        create(&db, &data.insert_sql()).await.unwrap();
+        create(&mut **db, &data.insert_sql()).await.unwrap();
 
         skus.insert(sku.to_string());
         batch_refs.insert(data.id.clone());
@@ -58,6 +58,8 @@ async fn test_api_returns_allocation() {
         .get_connection()
         .await;
 
+    let mut tx = db.begin().await.unwrap();
+
     let sku = random_sku("");
     let other_sku = random_sku("OTHER");
 
@@ -66,7 +68,7 @@ async fn test_api_returns_allocation() {
     let other_batch_ref = random_batch_ref("3");
 
     add_stock(
-        &db,
+        &mut tx,
         vec![
             (
                 &later_batch_ref,

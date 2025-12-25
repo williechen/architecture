@@ -1,5 +1,4 @@
 [workspace]
 members = ["my_project", "sql_derives"]
-exclude = ["tests/*"]
 default-members = ["my_project"]
 resolver = "2"

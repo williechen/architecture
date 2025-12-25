@@ -133,7 +133,7 @@ async fn test_orderline_mapper_can_load_lines() {
         },
     ];
 
-    let lines: Vec<OrderLine> = read::<OrderLine>(&db, &OrderLine::select_sql(None))
+    let lines: Vec<OrderLine> = read::<&SqlitePool, OrderLine>(&db, &OrderLine::select_sql(None))
         .await
         .unwrap();
 
@@ -163,7 +163,7 @@ async fn test_orderline_mapper_can_save_line() {
 
     create(&db, &new_line.insert_sql()).await.unwrap();
 
-    let fetched_line = read_one::<OrderLine>(
+    let fetched_line = read_one::<&SqlitePool, OrderLine>(
         &db,
         &OrderLine::select_sql(Some(&OrderLine::where_eq("id", "1"))),
     )
@@ -191,7 +191,7 @@ async fn test_retrieving_batches() {
 
     // Retrieve batches
     let batches: Vec<batches::Batch> =
-        read::<batches::Batch>(&db, &batches::Batch::select_sql(None))
+        read::<&SqlitePool, batches::Batch>(&db, &batches::Batch::select_sql(None))
             .await
             .unwrap();
 
@@ -261,7 +261,7 @@ async fn test_saving_batches() {
     create(&db, &new_batch.insert_sql()).await.unwrap();
 
     let fetched_batch: Vec<batches::Batch> =
-        read::<batches::Batch>(&db, &batches::Batch::select_sql(None))
+        read::<&SqlitePool, batches::Batch>(&db, &batches::Batch::select_sql(None))
             .await
             .unwrap();
 
@@ -323,9 +323,12 @@ async fn test_saving_allocations() {
     create(&db, &new_allocation.insert_sql()).await.unwrap();
 
     let fetched_allocation: Vec<allocations::Allocation> =
-        read::<allocations::Allocation>(&db, &allocations::Allocation::select_sql(None))
-            .await
-            .unwrap();
+        read::<&SqlitePool, allocations::Allocation>(
+            &db,
+            &allocations::Allocation::select_sql(None),
+        )
+        .await
+        .unwrap();
 
     assert!(fetched_allocation == vec![new_allocation]);
 }
@@ -361,14 +364,16 @@ async fn test_retrieving_allocations() {
     .unwrap();
 
     // Retrieve allocations
-    let allocations =
-        read::<allocations::Allocation>(&db, &allocations::Allocation::select_sql(None))
-            .await
-            .unwrap();
+    let allocations = read::<&SqlitePool, allocations::Allocation>(
+        &db,
+        &allocations::Allocation::select_sql(None),
+    )
+    .await
+    .unwrap();
 
     let id = allocations[0].order_line_id.clone();
 
-    let order_lines = read_one::<order_lines::OrderLine>(
+    let order_lines = read_one::<&SqlitePool, order_lines::OrderLine>(
         &db,
         &order_lines::OrderLine::select_sql(Some(&order_lines::OrderLine::where_eq("id", &id))),
     )

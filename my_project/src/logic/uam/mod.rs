@@ -8,6 +8,7 @@ use crate::{
 use axum::{Form, Json, Router, extract::State, routing::post};
 use chrono::Utc;
 use serde::Deserialize;
+use sqlx::SqlitePool;
 use tower_sessions::Session;
 
 pub fn logic_routes() -> Router<AppState> {
@@ -30,7 +31,7 @@ pub async fn login_auth(
     let config = crate::auth::auth_jwt::JwtConfig::default();
     let jwt = JWT::new(config);
 
-    let uam_user = read_one::<UamUser>(
+    let uam_user = read_one::<&SqlitePool, UamUser>(
         &app_state.db,
         &UamUser::select_sql(Some(&format!("user_name='{}'", auth.username))),
     )
