@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
 use crate::{
-    api_base::api_errors::ApiError, chapter1, entities::batches, repositories::read,
+    api_base::api_errors::ApiError,
+    chapter1,
+    entities::batches,
+    repositories::{read, update},
     sitemaps::app_state::AppState,
 };
 use axum::{
@@ -44,10 +47,34 @@ pub async fn allocate_handler(
         qty: vo.qty,
     };
 
-    let allocate = chapter1::allocate(&order_line, batch_refs).unwrap();
+    let allocate = chapter1::allocate(&order_line, batch_refs);
 
-    let mut res = HashMap::new();
-    res.insert("batch_ref", allocate);
+    if let Ok(option) = allocate {
+        if let Some(batch_ref) = option {
+            update::<&SqlitePool>(
+                db,
+                &format!(
+                    "UPDATE batches SET purchased_quantity = purchased_quantity - {} WHERE reference = '{}'",
+                    vo.qty, batch_ref
+                ),
+            )
+            .await
+            .unwrap();
 
-    Ok((StatusCode::CREATED, Json(res)))
+            return Ok((
+                StatusCode::CREATED,
+                Json({
+                    let mut res = HashMap::new();
+                    res.insert("batch_ref", batch_ref);
+                    res
+                }),
+            ));
+        } else {
+            return Err(ApiError::BadRequest("Out of stock".to_string()));
+        }
+    } else {
+        return Err(ApiError::InternalServerError(
+            "Allocation error".to_string(),
+        ));
+    }
 }

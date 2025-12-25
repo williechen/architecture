@@ -85,15 +85,16 @@ impl std::hash::Hash for Batch {
 
 pub fn allocate(
     line: &OrderLine,
-    mut batches: Vec<&mut Batch>,
+    batches: Vec<&mut Batch>,
 ) -> Result<Option<String>, &'static str> {
-    for batch in batches.iter_mut() {
-        if batch.can_allocate(line) {
-            batch.allocate(line);
-            return Ok(Some(batch.reference.clone()));
-        } else {
-            return Err("Out of stock");
-        }
+    let mut batch_vec: Vec<&mut Batch> = batches
+        .into_iter()
+        .filter(|b| b.can_allocate(line))
+        .collect();
+    if !batch_vec.is_empty() {
+        batch_vec[0].allocate(line);
+        return Ok(Some(batch_vec[0].reference.clone()));
+    } else {
+        return Err("Out of stock");
     }
-    Ok(None)
 }
