@@ -9,7 +9,7 @@ anyhow = "1.0"
 
 askama = { version = "0.15", features = ["full"] }
 
-axum = "0.8"
+axum = { version = "0.8", features = ["macros", "multipart", "ws"] }
 axum-valid = "0.24"
 # B
 base64 = "0.22"

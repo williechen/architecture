@@ -55,6 +55,30 @@ async fn add_stock(
 }
 
 #[tokio::test]
+async fn test_web_login() {
+    let db = configures::AppConfig::load()
+        .database
+        .get_connection()
+        .await;
+
+    let route = architecture::sitemaps::sitemap(db).await;
+
+    let request = Request::builder()
+        .method("GET")
+        .uri("/login")
+        .body(Body::empty())
+        .unwrap();
+
+    let res = route.oneshot(request).await.unwrap();
+
+    let status = res.status();
+    assert_eq!(status, 200);
+
+    let body = res.into_body().collect().await.unwrap().to_bytes();
+    println!("{}", String::from_utf8_lossy(&body));
+}
+
+#[tokio::test]
 async fn test_api_returns_allocation() {
     let db = configures::AppConfig::load()
         .database
@@ -74,15 +98,6 @@ async fn test_api_returns_allocation() {
         &mut tx,
         vec![
             (
-                &later_batch_ref,
-                &sku,
-                100,
-                Some(NaiveDateTime::new(
-                    NaiveDate::from_ymd_opt(2012, 1, 1).unwrap(),
-                    chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
-                )),
-            ),
-            (
                 &early_batch_ref,
                 &sku,
                 100,
@@ -91,10 +106,21 @@ async fn test_api_returns_allocation() {
                     chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
                 )),
             ),
+            (
+                &later_batch_ref,
+                &sku,
+                100,
+                Some(NaiveDateTime::new(
+                    NaiveDate::from_ymd_opt(2012, 1, 1).unwrap(),
+                    chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
+                )),
+            ),
             (&other_batch_ref, &other_sku, 100, None),
         ],
     )
     .await;
+
+    tx.commit().await.unwrap();
 
     let data = order_lines::OrderLine {
         id: xid::new().to_string(),
@@ -108,18 +134,19 @@ async fn test_api_returns_allocation() {
     let route = architecture::sitemaps::sitemap(db).await;
 
     let request = Request::builder()
-        .method("GET")
-        .uri("/login")
-        .body(Body::empty())
+        .method("POST")
+        .uri("/allocate")
+        .header("Content-Type", "application/json")
+        .body(Body::from(serde_json::to_string(&data).unwrap()))
         .unwrap();
 
     let res = route.oneshot(request).await.unwrap();
 
     let status = res.status();
-    assert_eq!(status, 200);
+    assert_eq!(status, 201);
 
     let body = res.into_body().collect().await.unwrap().to_bytes();
-    println!("{}", String::from_utf8_lossy(&body));
-
-    tx.rollback().await.unwrap();
+    let body_str = serde_json::from_slice::<serde_json::Value>(&body).unwrap();
+    let batch_ref = body_str.get("batch_ref").unwrap().as_str().unwrap();
+    assert_eq!(batch_ref, early_batch_ref);
 }

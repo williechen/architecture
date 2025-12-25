@@ -24,10 +24,10 @@ use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
 use crate::api_base::api_doc::ApiDoc;
-use crate::logic;
 use crate::sitemaps::app_state::AppState;
 use crate::sitemaps::authenticator::authenticator_layer;
 use crate::web_base::web_errors;
+use crate::{chapter3, logic};
 
 pub async fn sitemap(db: SqlitePool) -> Router {
     let app_state = AppState {
@@ -86,17 +86,19 @@ pub async fn sitemap(db: SqlitePool) -> Router {
         String::from("/assets/*"),
         String::from("/swagger/*"),
         String::from("/api-doc/*"),
+        String::from("/allocate"),
     ];
 
     Router::new()
         .merge(logic::uam::logic_routes())
         .merge(logic::common::common_routes())
         .merge(logic::logic_routes())
+        .merge(chapter3::logic_routes())
         .merge(
             SwaggerUi::new("/swagger") // 用於 UI 的 endpoint
                 .url("/api-doc/openapi.json", ApiDoc::openapi()), // 提供 openapi.json 的路徑與內容
         )
-        .nest_service("/assets", ServeDir::new("my_project/assets"))
+        .nest_service("/assets", ServeDir::new("assets"))
         .layer(trace)
         .layer(timeout)
         .layer(authenticator_layer(config, skip_paths, app_state.clone()))

@@ -5,7 +5,10 @@ use crate::{
     repositories::{create, read_one},
     sitemaps::app_state::AppState,
 };
-use axum::{Form, Json, Router, extract::State, routing::post};
+use axum::{
+    Form, Json, Router, debug_handler, extract::State, http::StatusCode, response::IntoResponse,
+    routing::post,
+};
 use chrono::Utc;
 use serde::Deserialize;
 use sqlx::SqlitePool;
@@ -23,11 +26,12 @@ pub struct AuthVo {
     password: String,
 }
 
+#[debug_handler]
 pub async fn login_auth(
     State(app_state): State<AppState>,
     session: Session,
     Form(auth): Form<AuthVo>,
-) -> Result<Json<String>, ApiError> {
+) -> Result<impl IntoResponse, ApiError> {
     let config = crate::auth::auth_jwt::JwtConfig::default();
     let jwt = JWT::new(config);
 
@@ -47,10 +51,14 @@ pub async fn login_auth(
 
         session.insert("token", token.clone()).await?;
 
-        return Ok(Json(format!(
-            "Authenticated user: {}, password: {}, token: {}",
-            auth.username, auth.password, token
-        )));
+        return Ok((
+            StatusCode::CREATED,
+            Json(format!(
+                "Authenticated user: {}, password: {}, token: {}",
+                auth.username, auth.password, token
+            )),
+        )
+            .into_response());
     } else {
         return Err(ApiError::Unauthorized("User not found".to_string()));
     }
@@ -63,10 +71,11 @@ pub struct AuthUserVo {
     email: String,
 }
 
+#[debug_handler]
 pub async fn create_user(
     State(app_state): State<AppState>,
     Form(auth): Form<AuthUserVo>,
-) -> Result<Json<String>, ApiError> {
+) -> Result<impl IntoResponse, ApiError> {
     let new_user = UamUser {
         id: xid::new().to_string(),
         user_name: auth.username,
@@ -78,9 +87,13 @@ pub async fn create_user(
 
     let inserted_user = create(&app_state.db, &new_user.insert_sql()).await?;
 
-    Ok(Json(format!(
-        "Created user: {}, id: {}",
-        new_user.user_name,
-        inserted_user.last_insert_rowid()
-    )))
+    Ok((
+        axum::http::StatusCode::OK,
+        Json(format!(
+            "Created user: {}, id: {}",
+            new_user.user_name,
+            inserted_user.last_insert_rowid()
+        )),
+    )
+        .into_response())
 }
