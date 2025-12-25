@@ -35,7 +35,7 @@ async fn start_mappers(db: &SqlitePool) {
             id TEXT PRIMARY KEY,
             reference TEXT,
             sku TEXT,
-            qty INTEGER,
+            purchased_quantity INTEGER,
             eta TEXT,
             created_at TEXT,
             updated_at TEXT
@@ -181,7 +181,7 @@ async fn test_retrieving_batches() {
     // Insert test data into batches table
     db.execute(
         r"
-        INSERT INTO batches (id, reference, sku, qty, eta, created_at, updated_at)
+        INSERT INTO batches (id, reference, sku, purchased_quantity, eta, created_at, updated_at)
         VALUES ('1', 'batch1', 'sku1', 100, NULL, '2025-12-08T00:00:00', '2025-12-08T00:00:00'),
                ('2', 'batch2', 'sku2', 200, '2011-04-11T00:00:00', '2025-12-08T00:00:00', '2025-12-08T00:00:00')
     ",
@@ -258,7 +258,9 @@ async fn test_saving_batches() {
             .unwrap(),
     };
 
-    create(&db, &new_batch.insert_sql()).await.unwrap();
+    let insert = new_batch.insert_sql();
+    println!("Insert SQL: {}", insert);
+    create(&db, &insert).await.unwrap();
 
     let fetched_batch: Vec<batches::Batch> =
         read::<&SqlitePool, batches::Batch>(&db, &batches::Batch::select_sql(None))
@@ -348,7 +350,7 @@ async fn test_retrieving_allocations() {
 
     db.execute(
         r"
-        INSERT INTO batches (id, reference, sku, qty, eta, created_at, updated_at) VALUES ('1', 'batch1', 'sku1', 100, NULL, '2025-12-08T00:00:00', '2025-12-08T00:00:00')
+        INSERT INTO batches (id, reference, sku, purchased_quantity, eta, created_at, updated_at) VALUES ('1', 'batch1', 'sku1', 100, NULL, '2025-12-08T00:00:00', '2025-12-08T00:00:00')
     ",
     )
     .await

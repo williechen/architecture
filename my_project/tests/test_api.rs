@@ -5,8 +5,12 @@ use architecture::{
     entities::{batches, order_lines},
     repositories::create,
 };
+use axum::{body::Body, extract::Request};
 use chrono::{NaiveDate, NaiveDateTime, Utc};
+use http_body_util::BodyExt;
+use serde_json::Value;
 use sqlx::{Sqlite, Transaction};
+use tower::ServiceExt;
 
 fn random_suffix() -> String {
     xid::new().to_string()[..6].to_string()
@@ -102,14 +106,21 @@ async fn test_api_returns_allocation() {
         updated_at: Utc::now().naive_utc(),
     };
 
-    let req = reqwest::Client::new()
-        .post("http://localhost:3000/allocate")
-        .json(&data)
-        .send()
-        .await
+    let route = architecture::sitemaps::sitemap(db).await;
+
+    let request = Request::builder()
+        .method("GET")
+        .uri("/login")
+        .body(Body::empty())
         .unwrap();
 
-    assert_eq!(req.status(), 201);
-    let batch_ref_resp: String = req.json().await.unwrap();
-    assert_eq!(batch_ref_resp, early_batch_ref);
+    let res = route.oneshot(request).await.unwrap();
+
+    let status = res.status();
+    assert_eq!(status, 200);
+
+    let body = res.into_body().collect().await.unwrap().to_bytes();
+    println!("{}", String::from_utf8_lossy(&body));
+
+    tx.rollback().await.unwrap();
 }

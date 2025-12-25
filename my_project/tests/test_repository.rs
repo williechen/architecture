@@ -35,7 +35,7 @@ async fn start_mappers(db: &SqlitePool) {
             id TEXT PRIMARY KEY,
             reference TEXT,
             sku TEXT,
-            qty INTEGER,
+            purchased_quantity INTEGER,
             eta TEXT,
             created_at TEXT,
             updated_at TEXT

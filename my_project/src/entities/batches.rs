@@ -9,6 +9,8 @@ pub struct Batch {
     pub id: String,
     pub reference: String,
     pub sku: String,
+    #[sql(column = "purchased_quantity")]
+    #[sqlx(rename = "purchased_quantity")]
     pub qty: u32,
     pub eta: Option<NaiveDateTime>,
     pub created_at: NaiveDateTime,
