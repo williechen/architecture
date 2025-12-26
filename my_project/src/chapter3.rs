@@ -39,19 +39,25 @@ pub async fn allocate_handler(
         .map(|b| chapter1::Batch::new(&b.reference, &b.sku, b.qty, b.eta))
         .collect();
 
+    let exists_sku = batch_vos.iter().any(|b| b.sku == vo.sku);
+    if !exists_sku {
+        return Err(ApiError::BadRequest(format!("Invalid SKU {}", vo.sku)));
+    }
+
     let batch_refs: Vec<&mut chapter1::Batch> = batch_vos.iter_mut().collect();
 
     let order_line = chapter1::OrderLine {
-        order_id: vo.order_id,
-        sku: vo.sku,
+        order_id: vo.order_id.clone(),
+        sku: vo.sku.clone(),
         qty: vo.qty,
     };
 
     let allocate = chapter1::allocate(&order_line, batch_refs);
 
-    if let Ok(option) = allocate {
-        if let Some(batch_ref) = option {
-            update::<&SqlitePool>(
+    match allocate {
+        Ok(option) => {
+            if let Some(batch_ref) = option {
+                update::<&SqlitePool>(
                 db,
                 &format!(
                     "UPDATE batches SET purchased_quantity = purchased_quantity - {} WHERE reference = '{}'",
@@ -61,20 +67,23 @@ pub async fn allocate_handler(
             .await
             .unwrap();
 
-            return Ok((
-                StatusCode::CREATED,
-                Json({
-                    let mut res = HashMap::new();
-                    res.insert("batch_ref", batch_ref);
-                    res
-                }),
-            ));
-        } else {
-            return Err(ApiError::BadRequest("Out of stock".to_string()));
+                return Ok((
+                    StatusCode::CREATED,
+                    Json({
+                        let mut res = HashMap::new();
+                        res.insert("batch_ref", batch_ref);
+                        res
+                    }),
+                ));
+            } else {
+                return Err(ApiError::BadRequest(format!(
+                    "Out of stock for sku {}",
+                    vo.sku.clone()
+                )));
+            }
         }
-    } else {
-        return Err(ApiError::InternalServerError(
-            "Allocation error".to_string(),
-        ));
+        Err(e) => {
+            return Err(ApiError::BadRequest(e));
+        }
     }
 }

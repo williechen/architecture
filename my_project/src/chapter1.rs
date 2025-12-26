@@ -83,10 +83,7 @@ impl std::hash::Hash for Batch {
     }
 }
 
-pub fn allocate(
-    line: &OrderLine,
-    batches: Vec<&mut Batch>,
-) -> Result<Option<String>, &'static str> {
+pub fn allocate(line: &OrderLine, batches: Vec<&mut Batch>) -> Result<Option<String>, String> {
     let mut batch_vec: Vec<&mut Batch> = batches
         .into_iter()
         .filter(|b| b.can_allocate(line))
@@ -95,6 +92,6 @@ pub fn allocate(
         batch_vec[0].allocate(line);
         return Ok(Some(batch_vec[0].reference.clone()));
     } else {
-        return Err("Out of stock");
+        return Err(format!("Out of stock for sku {}", line.sku));
     }
 }
