@@ -38,7 +38,7 @@ impl Permission {
         }
     }
 
-    pub fn get_id(&self) -> Option<String> {
+    pub fn get_user_id(&self) -> Option<String> {
         self.id.clone()
     }
 

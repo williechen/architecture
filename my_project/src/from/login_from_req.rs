@@ -5,11 +5,7 @@ use sqlx::SqlitePool;
 use crate::entities::uam_role::UamRole;
 use crate::repositories::{read, read_one};
 use crate::sitemaps::app_state::AppState;
-use crate::{
-    api_base::api_errors::ApiError,
-    auth::{auth_perm, auth_user},
-    entities::uam_user::UamUser,
-};
+use crate::{api_base::api_errors::ApiError, auth::auth_user, entities::uam_user::UamUser};
 
 #[derive(Debug)]
 pub struct LoginUser(pub auth_user::User);
@@ -21,15 +17,15 @@ impl FromRequestParts<AppState> for LoginUser {
         parts: &mut axum::http::request::Parts,
         state: &AppState,
     ) -> Result<Self, Self::Rejection> {
-        let perm = parts
+        let req_user_id = parts
             .extensions
-            .get::<auth_perm::Permission>()
+            .get::<String>()
             .cloned()
             .ok_or_else(|| ApiError::Unauthorized("No Authorized".to_string()))?;
 
         let db = state.db.clone();
 
-        let user_id = format!("'{}'", perm.get_id().unwrap());
+        let user_id = format!("'{}'", req_user_id);
 
         let query_user = UamUser::select_sql(Some(&UamUser::where_eq("id", &user_id)));
 
@@ -39,7 +35,7 @@ impl FromRequestParts<AppState> for LoginUser {
 
         let roles = read::<&SqlitePool, UamRole>(&db, &query_role).await?;
 
-        let mut auth_user = auth_user::User::new(perm.get_id().unwrap());
+        let mut auth_user = auth_user::User::new(req_user_id);
         if let Some(user) = user {
             auth_user.username = Some(user.user_name);
             auth_user.first_name = Some("".to_string());

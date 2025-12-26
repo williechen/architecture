@@ -99,7 +99,9 @@ impl AsyncAuthorizeRequest<Body> for JwtToken {
                     let token_valid = jwt.decode::<auth_perm::Permission>(&token_str);
                     if token_valid.is_ok() {
                         let permission = token_valid.unwrap();
-                        request.extensions_mut().insert(permission.clone());
+                        request
+                            .extensions_mut()
+                            .insert(permission.get_user_id().unwrap_or("".to_string()));
                         return is_permission(&path, &permission, &db, request);
                     }
                 }
@@ -116,7 +118,9 @@ impl AsyncAuthorizeRequest<Body> for JwtToken {
                     let token_valid = jwt.decode::<auth_perm::Permission>(token_str);
                     if token_valid.is_ok() {
                         let permission = token_valid.unwrap();
-                        request.extensions_mut().insert(permission.clone());
+                        request
+                            .extensions_mut()
+                            .insert(permission.get_user_id().unwrap_or("".to_string()));
                         return is_permission(&path, &permission, &db, request);
                     }
                 }

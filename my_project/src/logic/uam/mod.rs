@@ -1,3 +1,5 @@
+use std::{collections::HashMap, hash::Hash};
+
 use crate::{
     api_base::api_errors::ApiError,
     auth::{auth_jwt::JWT, auth_user},
@@ -6,7 +8,10 @@ use crate::{
     sitemaps::app_state::AppState,
 };
 use axum::{
-    Form, Json, Router, debug_handler, extract::State, http::StatusCode, response::IntoResponse,
+    Form, Json, Router, debug_handler,
+    extract::State,
+    http::{StatusCode, response},
+    response::IntoResponse,
     routing::post,
 };
 use chrono::Utc;
@@ -45,20 +50,17 @@ pub async fn login_auth(
             return Err(ApiError::Unauthorized("Invalid password".to_string()));
         }
 
-        let user = auth_user::User::new(uam_user.id);
+        let user = auth_user::User::new(uam_user.id.clone());
 
         let token = jwt.encode(user)?;
 
         session.insert("token", token.clone()).await?;
 
-        return Ok((
-            StatusCode::CREATED,
-            Json(format!(
-                "Authenticated user: {}, password: {}, token: {}",
-                auth.username, auth.password, token
-            )),
-        )
-            .into_response());
+        let mut res_data = HashMap::new();
+        res_data.insert("user_id".to_string(), uam_user.id.clone());
+        res_data.insert("token".to_string(), token);
+
+        return Ok((StatusCode::CREATED, Json(res_data)).into_response());
     } else {
         return Err(ApiError::Unauthorized("User not found".to_string()));
     }
