@@ -1,5 +1,5 @@
-use crate::entities::ssm_codemap::SsmCodemap;
-use crate::entities::ssm_config::SsmConfig;
+use crate::entities::scm_codemap::ScmCodemap;
+use crate::entities::scm_config::ScmConfig;
 use crate::repositories::read;
 use sqlx::SqlitePool;
 use std::collections::HashMap;
@@ -55,7 +55,7 @@ pub async fn load_codemap(db: &SqlitePool) -> HashMap<String, HashMap<String, St
 
     let mut codemap = HashMap::new();
 
-    let items: Vec<SsmCodemap> = read::<&SqlitePool, SsmCodemap>(db, &SsmCodemap::select_sql(None))
+    let items: Vec<ScmCodemap> = read::<&SqlitePool, ScmCodemap>(db, &ScmCodemap::select_sql(None))
         .await
         .unwrap();
     for item in items {
@@ -75,7 +75,7 @@ pub async fn load_config(db: &SqlitePool) -> HashMap<String, HashMap<String, Str
     tracing::info!("selecting config...");
 
     let mut config = HashMap::new();
-    let items: Vec<SsmConfig> = read::<&SqlitePool, SsmConfig>(db, &SsmConfig::select_sql(None))
+    let items: Vec<ScmConfig> = read::<&SqlitePool, ScmConfig>(db, &ScmConfig::select_sql(None))
         .await
         .unwrap();
     for item in items {

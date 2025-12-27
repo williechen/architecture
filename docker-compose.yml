@@ -1,0 +1,15 @@
+services:
+  architecture:
+    build: .
+    image: architecture:latest
+    container_name: architecture_app
+    ports:
+      - "3000:3000"
+    volumes:
+      - APP_Logs:/logs
+    environment:
+      - RUST_LOG=info
+    restart: unless-stopped
+
+volumes:
+  APP_Logs:

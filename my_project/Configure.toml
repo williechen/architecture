@@ -8,12 +8,12 @@ host = "localhost"
 port = 5432
 user = "user"
 pswd = "password"
-database = "mydb"
+database = "mysql"
 schema = "public"
 
 [logger]
 level = "debug"
-log_directory = "../logs/"
+log_directory = "logs/"
 file_prefix = "app"
 
 [secret]

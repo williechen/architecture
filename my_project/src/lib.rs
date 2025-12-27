@@ -14,6 +14,8 @@ pub mod web_base;
 pub async fn run_app() {
     let _logs = configures::get_config().logger.load();
     let db = configures::get_config().database.get_connection().await;
+    // Run database migrations
+    sqlx::migrate!("./migrations").run(&db).await.unwrap();
 
     let listenert = tokio::net::TcpListener::bind(configures::get_config().server.address())
         .await

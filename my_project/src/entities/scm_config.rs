@@ -2,7 +2,7 @@ use chrono::NaiveDateTime;
 use sql_derives::SqlTable;
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, SqlTable, sqlx::FromRow)]
-pub struct SsmCodemap {
+pub struct ScmConfig {
     pub id: String,
     pub category: String,
     pub code: String,

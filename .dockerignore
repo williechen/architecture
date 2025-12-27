@@ -1,0 +1,8 @@
+# Ignore target directory and other unnecessary files
+/target
+**/*.rs.bk
+**/*.log
+**/.env
+**/tmp
+**/logs
+**/tests

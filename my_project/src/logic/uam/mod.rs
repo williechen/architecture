@@ -1,4 +1,4 @@
-use std::{collections::HashMap, hash::Hash};
+use std::collections::HashMap;
 
 use crate::{
     api_base::api_errors::ApiError,
@@ -8,10 +8,7 @@ use crate::{
     sitemaps::app_state::AppState,
 };
 use axum::{
-    Form, Json, Router, debug_handler,
-    extract::State,
-    http::{StatusCode, response},
-    response::IntoResponse,
+    Form, Json, Router, debug_handler, extract::State, http::StatusCode, response::IntoResponse,
     routing::post,
 };
 use chrono::Utc;

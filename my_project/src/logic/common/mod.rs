@@ -1,7 +1,7 @@
 use std::process::Command;
 
 use crate::{
-    entities::ssm_codemap::SsmCodemap, repositories::create, sitemaps::app_state::AppState,
+    entities::scm_codemap::ScmCodemap, repositories::create, sitemaps::app_state::AppState,
 };
 use axum::{Json, Router, debug_handler, extract::State, routing::get};
 use chrono::Local;
@@ -22,7 +22,7 @@ pub fn common_routes() -> Router<AppState> {
 )]
 #[debug_handler]
 pub async fn get_cache(State(state): State<AppState>) -> Json<String> {
-    let codemap = SsmCodemap {
+    let codemap = ScmCodemap {
         id: xid::new().to_string(),
         category: "example".to_string(),
         code: "001".to_string(),
