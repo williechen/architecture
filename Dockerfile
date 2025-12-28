@@ -51,7 +51,6 @@ RUN touch mysql.db
 
 COPY --from=builder /usr/src/app/target/release/architecture /architecture
 
-COPY my_project/assets /assets
 COPY my_project/Configure.toml /Configure.toml
 
 EXPOSE 3000
