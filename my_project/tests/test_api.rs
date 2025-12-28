@@ -128,7 +128,7 @@ async fn test_api_returns_allocation() {
 
 #[tokio::test]
 async fn test_400_message_for_invalid_sku() {
-    let unknown_sku = random_sku("");
+    let unknown_sku = random_sku("1");
     let order_id = random_order_id("");
 
     let db = configures::AppConfig::load()
@@ -160,5 +160,5 @@ async fn test_400_message_for_invalid_sku() {
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let body_str = serde_json::from_slice::<serde_json::Value>(&body).unwrap();
     let message = body_str.get("message").unwrap().as_str().unwrap();
-    assert_eq!(message, format!("Invalid SKU {}", unknown_sku));
+    assert_eq!(message, format!("Invalid sku {}", unknown_sku));
 }

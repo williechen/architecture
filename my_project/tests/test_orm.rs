@@ -34,11 +34,11 @@ async fn start_mappers(db: &SqlitePool) {
 
     db.execute(
         r"
-        CREATE TABLE batches (
+        CREATE TABLE batch (
             id TEXT PRIMARY KEY,
             reference TEXT,
             sku TEXT,
-            purchased_quantity INTEGER,
+            qty INTEGER,
             eta TEXT,
             created_at TEXT,
             updated_at TEXT
@@ -49,9 +49,8 @@ async fn start_mappers(db: &SqlitePool) {
 
     db.execute(
         r"
-        CREATE TABLE order_lines (
+        CREATE TABLE order_line (
             id TEXT PRIMARY KEY,
-            order_id TEXT,
             sku TEXT,
             qty INTEGER,
             created_at TEXT,
@@ -63,7 +62,7 @@ async fn start_mappers(db: &SqlitePool) {
 
     db.execute(
         r"
-        CREATE TABLE allocations (
+        CREATE TABLE allocation (
             id TEXT PRIMARY KEY,
             order_line_id TEXT,
             batch_id TEXT,
@@ -82,10 +81,10 @@ async fn test_orderline_mapper_can_load_lines() {
 
     db.execute(
         r"
-        INSERT INTO order_lines (id, order_id, sku, qty, created_at, updated_at)
-        VALUES ('1', 'order1', 'RED-CHAIR', 12, '2025-12-08T00:00:00', '2025-12-08T00:00:00'),
-               ('2', 'order2', 'RED-TABLE', 13, '2025-12-08T00:00:00', '2025-12-08T00:00:00'),
-               ('3', 'order3', 'BLUE-LIPSTICK', 14, '2025-12-08T00:00:00', '2025-12-08T00:00:00')
+        INSERT INTO order_line (id, sku, qty, created_at, updated_at)
+        VALUES ('order1', 'RED-CHAIR', 12, '2025-12-08T00:00:00', '2025-12-08T00:00:00'),
+               ('order2', 'RED-TABLE', 13, '2025-12-08T00:00:00', '2025-12-08T00:00:00'),
+               ('order3', 'BLUE-LIPSTICK', 14, '2025-12-08T00:00:00', '2025-12-08T00:00:00')
     ",
     )
     .await
@@ -145,7 +144,7 @@ async fn test_orderline_mapper_can_save_line() {
 
     let fetched_line = read_one::<&SqlitePool, OrderLine>(
         &db,
-        &OrderLine::select_sql(Some(&OrderLine::where_eq("id", "1"))),
+        &OrderLine::select_sql(Some(&OrderLine::where_eq("id", "'order1'"))),
     )
     .await
     .unwrap();
@@ -164,7 +163,7 @@ async fn test_retrieving_batches() {
     // Insert test data into batches table
     db.execute(
         r"
-        INSERT INTO batches (id, reference, sku, purchased_quantity, eta, created_at, updated_at)
+        INSERT INTO batch (id, reference, sku, qty, eta, created_at, updated_at)
         VALUES ('1', 'batch1', 'sku1', 100, NULL, '2025-12-08T00:00:00', '2025-12-08T00:00:00'),
                ('2', 'batch2', 'sku2', 200, '2011-04-11T00:00:00', '2025-12-08T00:00:00', '2025-12-08T00:00:00')
     ",
@@ -306,7 +305,7 @@ async fn test_retrieving_allocations() {
     // Insert test data into allocations table
     db.execute(
         r"
-        INSERT INTO order_lines (id, order_id, sku, qty, created_at, updated_at) VALUES ('1', 'order1', 'sku1', 12, '2025-12-08T00:00:00', '2025-12-08T00:00:00')
+        INSERT INTO order_line (id, sku, qty, created_at, updated_at) VALUES ('order1', 'sku1', 12, '2025-12-08T00:00:00', '2025-12-08T00:00:00')
     ",
     )
     .await
@@ -314,7 +313,7 @@ async fn test_retrieving_allocations() {
 
     db.execute(
         r"
-        INSERT INTO batches (id, reference, sku, purchased_quantity, eta, created_at, updated_at) VALUES ('1', 'batch1', 'sku1', 100, NULL, '2025-12-08T00:00:00', '2025-12-08T00:00:00')
+        INSERT INTO batch (id, reference, sku, qty, eta, created_at, updated_at) VALUES ('1', 'batch1', 'sku1', 100, NULL, '2025-12-08T00:00:00', '2025-12-08T00:00:00')
     ",
     )
     .await
@@ -322,8 +321,8 @@ async fn test_retrieving_allocations() {
 
     db.execute(
         r"
-        INSERT INTO allocations (id, order_line_id, batch_id, created_at, updated_at)
-        VALUES ('1', '1', '1', '2025-12-08T00:00:00', '2025-12-08T00:00:00')
+        INSERT INTO allocation (id, order_line_id, batch_id, created_at, updated_at)
+        VALUES ('1', 'order1', '1', '2025-12-08T00:00:00', '2025-12-08T00:00:00')
     ",
     )
     .await
@@ -337,7 +336,7 @@ async fn test_retrieving_allocations() {
     .await
     .unwrap();
 
-    let id = allocations[0].order_line_id.clone();
+    let id = format!("'{}'", allocations[0].order_line_id.clone());
 
     let order_lines = read_one::<&SqlitePool, order_lines::OrderLine>(
         &db,

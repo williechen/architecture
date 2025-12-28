@@ -5,6 +5,7 @@ use crate::{
     chapter1,
     entities::batches,
     repositories::{read, update},
+    services,
     sitemaps::app_state::AppState,
 };
 use axum::{
@@ -34,17 +35,8 @@ pub async fn allocate_handler(
     let batches =
         read::<&SqlitePool, batches::Batch>(db, &batches::Batch::select_sql(None)).await?;
 
-    let mut batch_vos: Vec<chapter1::Batch> = batches
-        .into_iter()
-        .map(|b| chapter1::Batch::new(&b.reference, &b.sku, b.qty, b.eta))
-        .collect();
-
-    let exists_sku = batch_vos.iter().any(|b| b.sku == req.sku);
-    if !exists_sku {
-        return Err(ApiError::BadRequest(format!("Invalid SKU {}", req.sku)));
-    }
-
-    let batch_refs: Vec<&mut chapter1::Batch> = batch_vos.iter_mut().collect();
+    let mut built_batches: Vec<chapter1::Batch> = batches.into_iter().map(|b| b.build()).collect();
+    let batch_vos: Vec<&mut chapter1::Batch> = built_batches.iter_mut().collect();
 
     let order_line = chapter1::OrderLine {
         order_id: req.id.clone(),
@@ -52,20 +44,20 @@ pub async fn allocate_handler(
         qty: req.qty,
     };
 
-    let allocate = chapter1::allocate(&order_line, batch_refs);
+    let allocate = services::allocate(&order_line, batch_vos);
 
     match allocate {
         Ok(option) => {
             if let Some(batch_ref) = option {
                 update::<&SqlitePool>(
-                db,
-                &format!(
-                    "UPDATE batches SET purchased_quantity = purchased_quantity - {} WHERE reference = '{}'",
-                    req.qty, batch_ref
-                ),
-            )
-            .await
-            .unwrap();
+                    db,
+                    &format!(
+                        "UPDATE batch SET qty = qty - {} WHERE reference = '{}'",
+                        req.qty, batch_ref
+                    ),
+                )
+                .await
+                .unwrap();
 
                 return Ok((
                     StatusCode::CREATED,

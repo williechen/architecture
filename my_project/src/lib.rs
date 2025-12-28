@@ -5,6 +5,7 @@ pub mod chapter3;
 pub mod configures;
 pub mod entities;
 pub mod repositories;
+pub mod services;
 pub mod sitemaps;
 
 pub async fn run_app() {

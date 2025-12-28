@@ -31,11 +31,11 @@ async fn start_mappers(db: &SqlitePool) {
 
     db.execute(
         r"
-        CREATE TABLE batches (
+        CREATE TABLE batch (
             id TEXT PRIMARY KEY,
             reference TEXT,
             sku TEXT,
-            purchased_quantity INTEGER,
+            qty INTEGER,
             eta TEXT,
             created_at TEXT,
             updated_at TEXT
@@ -46,9 +46,8 @@ async fn start_mappers(db: &SqlitePool) {
 
     db.execute(
         r"
-        CREATE TABLE order_lines (
+        CREATE TABLE order_line (
             id TEXT PRIMARY KEY,
-            order_id TEXT,
             sku TEXT,
             qty INTEGER,
             created_at TEXT,
@@ -60,7 +59,7 @@ async fn start_mappers(db: &SqlitePool) {
 
     db.execute(
         r"
-        CREATE TABLE allocations (
+        CREATE TABLE allocation (
             id TEXT PRIMARY KEY,
             order_line_id TEXT,
             batch_id TEXT,

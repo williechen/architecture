@@ -186,6 +186,6 @@ fn test_raises_out_of_stock_exception_if_cannot_allocate() {
 
     assert_eq!(
         allocate(&line, vec![&mut batch]).unwrap_err(),
-        "Out of stock"
+        "Out of stock for sku SMALL-FORK".to_string()
     );
 }

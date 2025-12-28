@@ -88,6 +88,7 @@ pub fn allocate(line: &OrderLine, batches: Vec<&mut Batch>) -> Result<Option<Str
         .into_iter()
         .filter(|b| b.can_allocate(line))
         .collect();
+
     if !batch_vec.is_empty() {
         batch_vec[0].allocate(line);
         return Ok(Some(batch_vec[0].reference.clone()));
