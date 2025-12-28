@@ -1,10 +1,13 @@
-use architecture::entities::{
-    allocations, batches,
-    order_lines::{self, OrderLine},
-};
 use architecture::repositories::create;
 use architecture::repositories::read;
 use architecture::repositories::read_one;
+use architecture::{
+    chapter1,
+    entities::{
+        allocations, batches,
+        order_lines::{self, OrderLine},
+    },
+};
 use sqlx::Executor;
 use sqlx::SqlitePool;
 use sqlx::sqlite::SqlitePoolOptions;
@@ -89,53 +92,31 @@ async fn test_orderline_mapper_can_load_lines() {
     .unwrap();
 
     let expected = vec![
-        OrderLine {
-            id: "1".to_string(),
+        chapter1::OrderLine {
             order_id: "order1".to_string(),
             sku: "RED-CHAIR".to_string(),
             qty: 12,
-            created_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
-                .unwrap()
-                .and_hms_opt(0, 0, 0)
-                .unwrap(),
-            updated_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
-                .unwrap()
-                .and_hms_opt(0, 0, 0)
-                .unwrap(),
         },
-        OrderLine {
-            id: "2".to_string(),
+        chapter1::OrderLine {
             order_id: "order2".to_string(),
             sku: "RED-TABLE".to_string(),
             qty: 13,
-            created_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
-                .unwrap()
-                .and_hms_opt(0, 0, 0)
-                .unwrap(),
-            updated_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
-                .unwrap()
-                .and_hms_opt(0, 0, 0)
-                .unwrap(),
         },
-        OrderLine {
-            id: "3".to_string(),
+        chapter1::OrderLine {
             order_id: "order3".to_string(),
             sku: "BLUE-LIPSTICK".to_string(),
             qty: 14,
-            created_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
-                .unwrap()
-                .and_hms_opt(0, 0, 0)
-                .unwrap(),
-            updated_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
-                .unwrap()
-                .and_hms_opt(0, 0, 0)
-                .unwrap(),
         },
     ];
 
-    let lines: Vec<OrderLine> = read::<&SqlitePool, OrderLine>(&db, &OrderLine::select_sql(None))
-        .await
-        .unwrap();
+    let line_ents: Vec<OrderLine> =
+        read::<&SqlitePool, OrderLine>(&db, &OrderLine::select_sql(None))
+            .await
+            .unwrap();
+    let lines: Vec<chapter1::OrderLine> = line_ents
+        .into_iter()
+        .map(|line_ent| line_ent.build())
+        .collect();
 
     assert!(lines.len() == expected.len());
     assert!(lines == expected);
@@ -170,7 +151,10 @@ async fn test_orderline_mapper_can_save_line() {
     .await
     .unwrap();
 
-    assert!(fetched_line == Some(new_line));
+    let new_line_ent = new_line.build();
+    let fetched_line_ent = fetched_line.as_ref().map(|line| line.build());
+
+    assert!(fetched_line_ent == Some(new_line_ent));
 }
 
 #[tokio::test]
@@ -195,46 +179,25 @@ async fn test_retrieving_batches() {
             .await
             .unwrap();
 
+    let batch_ents: Vec<chapter1::Batch> = batches.iter().map(|b| b.build()).collect();
+
     let expected = vec![
-        batches::Batch {
-            id: "1".to_string(),
-            reference: "batch1".to_string(),
-            sku: "sku1".to_string(),
-            qty: 100,
-            eta: None,
-            created_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
-                .unwrap()
-                .and_hms_opt(0, 0, 0)
-                .unwrap(),
-            updated_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
-                .unwrap()
-                .and_hms_opt(0, 0, 0)
-                .unwrap(),
-        },
-        batches::Batch {
-            id: "2".to_string(),
-            reference: "batch2".to_string(),
-            sku: "sku2".to_string(),
-            qty: 200,
-            eta: Some(
+        chapter1::Batch::new("batch1", "sku1", 100, None),
+        chapter1::Batch::new(
+            "batch2",
+            "sku2",
+            200,
+            Some(
                 chrono::NaiveDate::from_ymd_opt(2011, 4, 11)
                     .unwrap()
                     .and_hms_opt(0, 0, 0)
                     .unwrap(),
             ),
-            created_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
-                .unwrap()
-                .and_hms_opt(0, 0, 0)
-                .unwrap(),
-            updated_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
-                .unwrap()
-                .and_hms_opt(0, 0, 0)
-                .unwrap(),
-        },
+        ),
     ];
 
     assert!(batches.len() == expected.len());
-    assert!(batches == expected);
+    assert!(batch_ents == expected);
 }
 
 #[tokio::test]
@@ -267,7 +230,10 @@ async fn test_saving_batches() {
             .await
             .unwrap();
 
-    assert!(fetched_batch == vec![new_batch]);
+    let fetched_batch_ents: Vec<chapter1::Batch> =
+        fetched_batch.iter().map(|b| b.build()).collect();
+
+    assert!(fetched_batch_ents == vec![new_batch.build()]);
 }
 
 #[tokio::test]
@@ -382,20 +348,13 @@ async fn test_retrieving_allocations() {
     .await
     .unwrap();
 
-    let expected = OrderLine {
-        id: "1".to_string(),
+    let new_order_line = order_lines.as_ref().map(|line| line.build());
+
+    let expected = chapter1::OrderLine {
         order_id: "order1".to_string(),
         sku: "sku1".to_string(),
         qty: 12,
-        created_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
-            .unwrap()
-            .and_hms_opt(0, 0, 0)
-            .unwrap(),
-        updated_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
-            .unwrap()
-            .and_hms_opt(0, 0, 0)
-            .unwrap(),
     };
 
-    assert!(order_lines == Some(expected));
+    assert!(new_order_line == Some(expected));
 }

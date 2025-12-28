@@ -20,6 +20,7 @@ config = { version = "0.15", features = ["toml"] }
 # F
 # G
 # H
+http-body-util = "0.1"
 # I
 # J
 # K
