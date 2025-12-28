@@ -137,18 +137,17 @@ async fn test_repository_can_retrieve_a_batch_with_allocations() {
     assert_eq!(fetched_batch.qty, expected.available_quantity());
 
     assert_eq!(fetched_order_line.sku, expected_order.sku);
-    assert_eq!(fetched_order_line.order_id, expected_order.order_id);
+    assert_eq!(fetched_order_line.id, expected_order.order_id);
     assert_eq!(fetched_order_line.qty, expected_order.qty);
 }
 
 async fn insert_order_line(db: &SqlitePool) -> String {
     let order_line = OrderLine {
-        order_id: "order1".to_string(),
+        id: "order1".to_string(),
         sku: "GENERIC-SOFA".to_string(),
-        id: xid::new().to_string(),
+        qty: 12,
         created_at: Local::now().naive_local(),
         updated_at: Local::now().naive_local(),
-        qty: 12,
     };
 
     create(db, &order_line.insert_sql()).await.unwrap();

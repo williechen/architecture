@@ -18,8 +18,8 @@ pub fn logic_routes() -> Router<AppState> {
 }
 
 #[derive(serde::Deserialize)]
-pub struct AllocateVo {
-    pub order_id: String,
+pub struct AllocateReq {
+    pub id: String,
     pub sku: String,
     pub qty: u32,
 }
@@ -27,7 +27,7 @@ pub struct AllocateVo {
 #[debug_handler]
 pub async fn allocate_handler(
     State(app_state): State<AppState>,
-    Json(vo): Json<AllocateVo>,
+    Json(req): Json<AllocateReq>,
 ) -> Result<impl IntoResponse, ApiError> {
     let db = &app_state.db;
 
@@ -39,17 +39,17 @@ pub async fn allocate_handler(
         .map(|b| chapter1::Batch::new(&b.reference, &b.sku, b.qty, b.eta))
         .collect();
 
-    let exists_sku = batch_vos.iter().any(|b| b.sku == vo.sku);
+    let exists_sku = batch_vos.iter().any(|b| b.sku == req.sku);
     if !exists_sku {
-        return Err(ApiError::BadRequest(format!("Invalid SKU {}", vo.sku)));
+        return Err(ApiError::BadRequest(format!("Invalid SKU {}", req.sku)));
     }
 
     let batch_refs: Vec<&mut chapter1::Batch> = batch_vos.iter_mut().collect();
 
     let order_line = chapter1::OrderLine {
-        order_id: vo.order_id.clone(),
-        sku: vo.sku.clone(),
-        qty: vo.qty,
+        order_id: req.id.clone(),
+        sku: req.sku.clone(),
+        qty: req.qty,
     };
 
     let allocate = chapter1::allocate(&order_line, batch_refs);
@@ -61,7 +61,7 @@ pub async fn allocate_handler(
                 db,
                 &format!(
                     "UPDATE batches SET purchased_quantity = purchased_quantity - {} WHERE reference = '{}'",
-                    vo.qty, batch_ref
+                    req.qty, batch_ref
                 ),
             )
             .await
@@ -78,7 +78,7 @@ pub async fn allocate_handler(
             } else {
                 return Err(ApiError::BadRequest(format!(
                     "Out of stock for sku {}",
-                    vo.sku.clone()
+                    req.sku.clone()
                 )));
             }
         }

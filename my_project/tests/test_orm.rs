@@ -128,8 +128,7 @@ async fn test_orderline_mapper_can_save_line() {
     start_mappers(&db).await;
 
     let new_line = OrderLine {
-        id: "1".to_string(),
-        order_id: "order1".to_string(),
+        id: "order1".to_string(),
         sku: "DECORATIVE-WIDGET".to_string(),
         qty: 12,
         created_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
@@ -258,8 +257,7 @@ async fn test_saving_allocations() {
     };
 
     let order_line = OrderLine {
-        id: "1".to_string(),
-        order_id: "order1".to_string(),
+        id: "order1".to_string(),
         sku: "sku1".to_string(),
         qty: 10,
         created_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)

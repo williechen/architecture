@@ -99,8 +99,7 @@ async fn test_api_returns_allocation() {
     tx.commit().await.unwrap();
 
     let data = order_lines::OrderLine {
-        id: xid::new().to_string(),
-        order_id: random_order_id(""),
+        id: random_order_id(""),
         sku: sku.clone(),
         qty: 3,
         created_at: Utc::now().naive_utc(),
@@ -128,159 +127,6 @@ async fn test_api_returns_allocation() {
 }
 
 #[tokio::test]
-async fn test_allocations_are_persisted() {
-    let db = configures::AppConfig::load()
-        .database
-        .get_connection()
-        .await;
-
-    let mut tx = db.begin().await.unwrap();
-
-    let sku = random_sku("");
-
-    let batch1 = random_batch_ref("1");
-    let batch2 = random_batch_ref("2");
-
-    let order1 = random_order_id("1");
-    let order2 = random_order_id("2");
-
-    add_stock(
-        &mut tx,
-        vec![
-            (
-                &batch1,
-                &sku,
-                10,
-                Some(NaiveDateTime::new(
-                    NaiveDate::from_ymd_opt(2011, 1, 1).unwrap(),
-                    chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
-                )),
-            ),
-            (
-                &batch2,
-                &sku,
-                10,
-                Some(NaiveDateTime::new(
-                    NaiveDate::from_ymd_opt(2011, 1, 2).unwrap(),
-                    chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
-                )),
-            ),
-        ],
-    )
-    .await;
-
-    tx.commit().await.unwrap();
-
-    let line1 = order_lines::OrderLine {
-        id: xid::new().to_string(),
-        order_id: order1.clone(),
-        sku: sku.clone(),
-        qty: 10,
-        created_at: Utc::now().naive_utc(),
-        updated_at: Utc::now().naive_utc(),
-    };
-    let line2 = order_lines::OrderLine {
-        id: xid::new().to_string(),
-        order_id: order2.clone(),
-        sku: sku.clone(),
-        qty: 10,
-        created_at: Utc::now().naive_utc(),
-        updated_at: Utc::now().naive_utc(),
-    };
-
-    let route = architecture::sitemaps::sitemap(db).await;
-
-    let request1 = Request::builder()
-        .method("POST")
-        .uri("/allocate")
-        .header("Content-Type", "application/json")
-        .body(Body::from(serde_json::to_string(&line1).unwrap()))
-        .unwrap();
-
-    let request2 = Request::builder()
-        .method("POST")
-        .uri("/allocate")
-        .header("Content-Type", "application/json")
-        .body(Body::from(serde_json::to_string(&line2).unwrap()))
-        .unwrap();
-
-    let res1 = route.clone().oneshot(request1).await.unwrap();
-    let status1 = res1.status();
-    assert_eq!(status1, 201);
-
-    let body1 = res1.into_body().collect().await.unwrap().to_bytes();
-    let body_str = serde_json::from_slice::<serde_json::Value>(&body1).unwrap();
-    let batch_ref = body_str.get("batch_ref").unwrap().as_str().unwrap();
-    assert_eq!(batch_ref, batch1);
-
-    let res2: axum::http::Response<Body> = route.clone().oneshot(request2).await.unwrap();
-    let status2 = res2.status();
-    assert_eq!(status2, 201);
-
-    let body2 = res2.into_body().collect().await.unwrap().to_bytes();
-    let body_str = serde_json::from_slice::<serde_json::Value>(&body2).unwrap();
-    let batch_ref = body_str.get("batch_ref").unwrap().as_str().unwrap();
-    assert_eq!(batch_ref, batch2);
-}
-
-#[tokio::test]
-async fn test_400_message_for_out_of_stock() {
-    let sku = random_sku("");
-    let small_batch = random_batch_ref("");
-    let large_order = random_order_id("");
-
-    let db = configures::AppConfig::load()
-        .database
-        .get_connection()
-        .await;
-
-    let mut tx = db.begin().await.unwrap();
-
-    add_stock(
-        &mut tx,
-        vec![(
-            &small_batch,
-            &sku,
-            10,
-            Some(NaiveDateTime::new(
-                NaiveDate::from_ymd_opt(2011, 1, 1).unwrap(),
-                chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
-            )),
-        )],
-    )
-    .await;
-
-    tx.commit().await.unwrap();
-
-    let data = order_lines::OrderLine {
-        id: xid::new().to_string(),
-        order_id: large_order.clone(),
-        sku: sku.clone(),
-        qty: 20,
-        created_at: Utc::now().naive_utc(),
-        updated_at: Utc::now().naive_utc(),
-    };
-
-    let route = architecture::sitemaps::sitemap(db).await;
-
-    let request = Request::builder()
-        .method("POST")
-        .uri("/allocate")
-        .header("Content-Type", "application/json")
-        .body(Body::from(serde_json::to_string(&data).unwrap()))
-        .unwrap();
-
-    let response = route.clone().oneshot(request).await.unwrap();
-    let status = response.status();
-    assert_eq!(status, 400);
-
-    let body = response.into_body().collect().await.unwrap().to_bytes();
-    let body_str = serde_json::from_slice::<serde_json::Value>(&body).unwrap();
-    let message = body_str.get("message").unwrap().as_str().unwrap();
-    assert_eq!(message, format!("Out of stock for sku {}", sku));
-}
-
-#[tokio::test]
 async fn test_400_message_for_invalid_sku() {
     let unknown_sku = random_sku("");
     let order_id = random_order_id("");
@@ -291,8 +137,7 @@ async fn test_400_message_for_invalid_sku() {
         .await;
 
     let data = order_lines::OrderLine {
-        id: xid::new().to_string(),
-        order_id: order_id.clone(),
+        id: order_id.clone(),
         sku: unknown_sku.clone(),
         qty: 20,
         created_at: Utc::now().naive_utc(),

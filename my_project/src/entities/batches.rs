@@ -4,13 +4,10 @@ use sql_derives::SqlTable;
 use crate::{chapter1, entities::order_lines};
 
 #[derive(Clone, serde::Serialize, serde::Deserialize, SqlTable, sqlx::FromRow)]
-#[sql(table = "batches")]
 pub struct Batch {
     pub id: String,
     pub reference: String,
     pub sku: String,
-    #[sql(column = "purchased_quantity")]
-    #[sqlx(rename = "purchased_quantity")]
     pub qty: u32,
     pub eta: Option<NaiveDateTime>,
     pub created_at: NaiveDateTime,
@@ -26,7 +23,7 @@ impl Batch {
         let mut batch = chapter1::Batch::new(&self.reference, &self.sku, self.qty, self.eta);
 
         let line = chapter1::OrderLine {
-            order_id: line_ent.order_id.clone(),
+            order_id: line_ent.id.clone(),
             sku: line_ent.sku.clone(),
             qty: line_ent.qty,
         };
