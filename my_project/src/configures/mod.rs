@@ -1,9 +1,6 @@
 mod database;
 mod logger;
-mod secretkey;
 mod server;
-pub mod sftppool;
-pub mod smtppool;
 
 use std::sync::LazyLock;
 
@@ -11,7 +8,6 @@ use serde::Deserialize;
 
 use crate::configures::database::DatabaseConfig;
 use crate::configures::logger::LoggerConfig;
-use crate::configures::secretkey::SecretConfig;
 use crate::configures::server::ServerConfig;
 
 static CONFIG_FILE: LazyLock<AppConfig> = LazyLock::new(|| AppConfig::load());
@@ -21,7 +17,6 @@ pub struct AppConfig {
     pub server: ServerConfig,
     pub database: DatabaseConfig,
     pub logger: LoggerConfig,
-    pub secret: SecretConfig,
 }
 
 impl AppConfig {

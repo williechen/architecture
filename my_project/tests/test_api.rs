@@ -55,30 +55,6 @@ async fn add_stock(
 }
 
 #[tokio::test]
-async fn test_web_login() {
-    let db = configures::AppConfig::load()
-        .database
-        .get_connection()
-        .await;
-
-    let route = architecture::sitemaps::sitemap(db).await;
-
-    let request = Request::builder()
-        .method("GET")
-        .uri("/login")
-        .body(Body::empty())
-        .unwrap();
-
-    let res = route.oneshot(request).await.unwrap();
-
-    let status = res.status();
-    assert_eq!(status, 200);
-
-    let body = res.into_body().collect().await.unwrap().to_bytes();
-    println!("{}", String::from_utf8_lossy(&body));
-}
-
-#[tokio::test]
 async fn test_api_returns_allocation() {
     let db = configures::AppConfig::load()
         .database

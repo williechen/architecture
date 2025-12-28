@@ -1,9 +1,9 @@
 use chrono::NaiveDateTime;
 use sql_derives::SqlTable;
 
-#[derive(
-    Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize, SqlTable, sqlx::FromRow,
-)]
+use crate::chapter1;
+
+#[derive(Clone, serde::Serialize, serde::Deserialize, SqlTable, sqlx::FromRow)]
 #[sql(table = "order_lines")]
 pub struct OrderLine {
     pub id: String,
@@ -12,4 +12,14 @@ pub struct OrderLine {
     pub qty: u32,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
+}
+
+impl OrderLine {
+    pub fn build(&self) -> chapter1::OrderLine {
+        chapter1::OrderLine {
+            order_id: self.order_id.clone(),
+            sku: self.sku.clone(),
+            qty: self.qty,
+        }
+    }
 }

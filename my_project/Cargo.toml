@@ -7,8 +7,6 @@ edition = "2024"
 # A
 anyhow = "1.0"
 
-askama = { version = "0.15", features = ["full"] }
-
 axum = { version = "0.8", features = ["macros", "multipart", "ws"] }
 axum-valid = "0.24"
 # B
@@ -22,21 +20,16 @@ config = { version = "0.15", features = ["toml"] }
 # F
 # G
 # H
-http-body-util = "0.1"
 # I
 # J
-jsonwebtoken = { version = "10.2", features = ["rust_crypto"] }
 # K
 # L
-lettre = "0.11"
 # M
 # N
 # O
 # P
 # Q
 # R
-russh = "0.56"
-russh-sftp = "2.1"
 # S
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -56,11 +49,9 @@ sqlx = { version = "0.8", features = [
 thiserror = "2.0"
 
 tokio = { version = "1.40", features = ["full"] }
-tokio-cron-scheduler = "0.15"
 
 tower = "0.5"
 tower-http = { version = "0.6", features = ["full"] }
-tower-sessions = "0.14"
 
 tracing = "0.1"
 tracing-appender = "0.2"

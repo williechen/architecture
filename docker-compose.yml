@@ -2,7 +2,7 @@ services:
   architecture:
     build: .
     image: architecture:latest
-    container_name: architecture_app
+    container_name: architecture
     ports:
       - "3000:3000"
     volumes:

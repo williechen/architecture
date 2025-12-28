@@ -1,15 +1,11 @@
 pub mod api_base;
-pub mod auth;
 pub mod chapter1;
 pub mod chapter2;
 pub mod chapter3;
 pub mod configures;
 pub mod entities;
-pub mod from;
-pub mod logic;
 pub mod repositories;
 pub mod sitemaps;
-pub mod web_base;
 
 pub async fn run_app() {
     let _logs = configures::get_config().logger.load();
