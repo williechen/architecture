@@ -6,7 +6,10 @@ use serde_json::Value;
 use tower::ServiceExt;
 
 fn random_suffix() -> String {
-    xid::new().to_string()[..6].to_string()
+    let s = xid::new().to_string();
+    let s_ref = s.as_str();
+
+    s_ref.chars().rev().take(6).collect::<String>()
 }
 
 fn random_sku(name: &str) -> String {
@@ -98,7 +101,7 @@ async fn test_api_returns_allocation() {
 
 #[tokio::test]
 async fn test_400_message_for_invalid_sku() {
-    let unknown_sku = random_sku("1");
+    let unknown_sku = random_sku("");
     let order_id = random_order_id("");
 
     let db = configures::AppConfig::load()
