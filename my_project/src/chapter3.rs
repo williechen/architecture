@@ -4,7 +4,7 @@ use crate::{
     api_base::api_errors::ApiError,
     chapter1,
     entities::batches,
-    repositories::{read, update},
+    repositories::{create, read, update},
     services,
     sitemaps::app_state::AppState,
 };
@@ -12,10 +12,13 @@ use axum::{
     Json, Router, debug_handler, extract::State, http::StatusCode, response::IntoResponse,
     routing::post,
 };
+use chrono::{NaiveDateTime, Utc};
 use sqlx::SqlitePool;
 
 pub fn logic_routes() -> Router<AppState> {
-    Router::new().route("/allocate", post(allocate_handler))
+    Router::new()
+        .route("/allocate", post(allocate_handler))
+        .route("/add_batch", post(add_batch_handler))
 }
 
 #[derive(serde::Deserialize)]
@@ -78,4 +81,43 @@ pub async fn allocate_handler(
             return Err(ApiError::BadRequest(e));
         }
     }
+}
+
+#[derive(serde::Deserialize)]
+pub struct AddBatchReq {
+    pub reference: String,
+    pub sku: String,
+    pub qty: u32,
+    pub eta: Option<String>,
+}
+
+#[debug_handler]
+pub async fn add_batch_handler(
+    State(app_state): State<AppState>,
+    Json(req): Json<AddBatchReq>,
+) -> Result<impl IntoResponse, ApiError> {
+    let db = &app_state.db;
+
+    let eta = match req.eta {
+        Some(ref eta_str) => {
+            let mut eta_str = eta_str.clone();
+            eta_str.push_str(" 00:00:00");
+            Some(NaiveDateTime::parse_from_str(&eta_str, "%Y-%m-%d %H:%M:%S").unwrap())
+        }
+        None => None,
+    };
+
+    let batch = batches::Batch {
+        id: xid::new().to_string(),
+        reference: req.reference,
+        sku: req.sku,
+        qty: req.qty,
+        eta,
+        created_at: Utc::now().naive_utc(),
+        updated_at: Utc::now().naive_utc(),
+    };
+
+    create::<&SqlitePool>(db, &batch.insert_sql()).await?;
+
+    Ok((StatusCode::CREATED, Json(batch)).into_response())
 }
