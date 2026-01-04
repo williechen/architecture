@@ -9,7 +9,9 @@ fn random_suffix() -> String {
     let s = xid::new().to_string();
     let s_ref = s.as_str();
 
-    s_ref.chars().rev().take(6).collect::<String>()
+    let sid = s_ref.chars().rev().take(6).collect::<String>();
+    println!("Generated random suffix: {}", sid);
+    sid
 }
 
 fn random_sku(name: &str) -> String {

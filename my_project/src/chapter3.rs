@@ -1,19 +1,14 @@
 use std::collections::HashMap;
 
 use crate::{
-    api_base::api_errors::ApiError,
-    chapter1,
-    entities::batches,
-    repositories::{create, read, update},
-    services,
-    sitemaps::app_state::AppState,
+    api_base::api_errors::ApiError, repositories::update, services, sitemaps::app_state::AppState,
 };
 use axum::{
     Json, Router, debug_handler, extract::State, http::StatusCode, response::IntoResponse,
     routing::post,
 };
-use chrono::{NaiveDateTime, Utc};
-use sqlx::SqlitePool;
+use chrono::NaiveDateTime;
+use sqlx::SqliteConnection;
 
 pub fn logic_routes() -> Router<AppState> {
     Router::new()
@@ -34,26 +29,14 @@ pub async fn allocate_handler(
     Json(req): Json<AllocateReq>,
 ) -> Result<impl IntoResponse, ApiError> {
     let db = &app_state.db;
+    let mut tx = db.begin().await.unwrap();
 
-    let batches =
-        read::<&SqlitePool, batches::Batch>(db, &batches::Batch::select_sql(None)).await?;
-
-    let mut built_batches: Vec<chapter1::Batch> = batches.into_iter().map(|b| b.build()).collect();
-    let batch_vos: Vec<&mut chapter1::Batch> = built_batches.iter_mut().collect();
-
-    let order_line = chapter1::OrderLine {
-        order_id: req.id.clone(),
-        sku: req.sku.clone(),
-        qty: req.qty,
-    };
-
-    let allocate = services::allocate(&order_line, batch_vos);
-
+    let allocate = services::allocate(&req.id, &req.sku, req.qty, &mut tx).await;
     match allocate {
         Ok(option) => {
             if let Some(batch_ref) = option {
-                update::<&SqlitePool>(
-                    db,
+                update::<&mut SqliteConnection>(
+                    &mut *tx,
                     &format!(
                         "UPDATE batch SET qty = qty - {} WHERE reference = '{}'",
                         req.qty, batch_ref
@@ -61,6 +44,8 @@ pub async fn allocate_handler(
                 )
                 .await
                 .unwrap();
+
+                tx.commit().await.unwrap();
 
                 return Ok((
                     StatusCode::CREATED,
@@ -71,6 +56,8 @@ pub async fn allocate_handler(
                     }),
                 ));
             } else {
+                tx.rollback().await.unwrap();
+
                 return Err(ApiError::BadRequest(format!(
                     "Out of stock for sku {}",
                     req.sku.clone()
@@ -78,6 +65,7 @@ pub async fn allocate_handler(
             }
         }
         Err(e) => {
+            tx.rollback().await.unwrap();
             return Err(ApiError::BadRequest(e));
         }
     }
@@ -97,27 +85,30 @@ pub async fn add_batch_handler(
     Json(req): Json<AddBatchReq>,
 ) -> Result<impl IntoResponse, ApiError> {
     let db = &app_state.db;
+    let mut tx = db.begin().await.unwrap();
 
-    let eta = match req.eta {
-        Some(ref eta_str) => {
-            let mut eta_str = eta_str.clone();
-            eta_str.push_str(" 00:00:00");
-            Some(NaiveDateTime::parse_from_str(&eta_str, "%Y-%m-%d %H:%M:%S").unwrap())
+    match services::add_batch(
+        &req.reference,
+        &req.sku,
+        req.qty,
+        req.eta
+            .as_ref()
+            .and_then(|s| NaiveDateTime::parse_from_str(s, "%Y-%m-%d").ok()),
+        &mut tx,
+    )
+    .await
+    {
+        Ok(_) => {
+            tx.commit().await.unwrap();
         }
-        None => None,
-    };
+        Err(e) => {
+            tx.rollback().await.unwrap();
+            return Err(ApiError::InternalServerError(format!(
+                "Failed to add batch: {}",
+                e
+            )));
+        }
+    }
 
-    let batch = batches::Batch {
-        id: xid::new().to_string(),
-        reference: req.reference,
-        sku: req.sku,
-        qty: req.qty,
-        eta,
-        created_at: Utc::now().naive_utc(),
-        updated_at: Utc::now().naive_utc(),
-    };
-
-    create::<&SqlitePool>(db, &batch.insert_sql()).await?;
-
-    Ok((StatusCode::CREATED, Json(batch)).into_response())
+    Ok((StatusCode::CREATED, "").into_response())
 }

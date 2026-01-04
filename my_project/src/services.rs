@@ -1,18 +1,83 @@
-use crate::chapter1::{self, Batch};
+use sqlx::{SqliteConnection, Transaction};
 
-pub fn is_valid_sku(sku: &str, batches: &Vec<&mut Batch>) -> bool {
-    batches.iter().any(|b| b.sku == sku)
+use crate::{
+    chapter1,
+    entities::{batches::Batch, products::Product},
+    repositories::{create, read, read_one},
+};
+
+pub async fn allocate(
+    order_id: &str,
+    sku: &str,
+    qty: u32,
+    tx: &mut Transaction<'_, sqlx::Sqlite>,
+) -> Result<Option<String>, String> {
+    let db = &mut **tx;
+
+    let order = chapter1::OrderLine {
+        order_id: order_id.to_string(),
+        sku: sku.to_string(),
+        qty,
+    };
+
+    let where_clause_string = format!("sku = '{}'", sku);
+    let where_clause = Some(where_clause_string.as_str());
+
+    let product_ent =
+        read_one::<&mut SqliteConnection, Product>(db, &Product::select_sql(where_clause))
+            .await
+            .unwrap();
+    if let Some(ent) = product_ent {
+        let batche_ents =
+            read::<&mut SqliteConnection, Batch>(db, &Batch::select_sql(where_clause))
+                .await
+                .unwrap();
+
+        let batches = batche_ents
+            .into_iter()
+            .map(|b| b.build())
+            .collect::<Vec<chapter1::Batch>>();
+
+        let res = ent.build(batches).allocate(&order);
+        return res;
+    } else {
+        return Err(format!("Invalid sku {}", sku));
+    }
 }
 
-pub fn allocate(
-    lien: &chapter1::OrderLine,
-    batches: Vec<&mut Batch>,
-) -> Result<Option<String>, String> {
-    if !is_valid_sku(&lien.sku, &batches) {
-        return Err(format!("Invalid sku {}", lien.sku));
+pub async fn add_batch(
+    reference: &str,
+    sku: &str,
+    quantity: u32,
+    eta: Option<chrono::NaiveDateTime>,
+    tx: &mut Transaction<'_, sqlx::Sqlite>,
+) -> Result<(), sqlx::Error> {
+    let db = &mut **tx;
+
+    let where_clause_string = format!("sku = '{}'", sku);
+    let where_clause = Some(where_clause_string.as_str());
+    println!("Looking for product with where clause: {:?}", where_clause);
+
+    let product_ent =
+        read_one::<&mut SqliteConnection, Product>(db, &Product::select_sql(where_clause)).await?;
+
+    if let Some(ent) = product_ent {
+        let new_batch = chapter1::Batch::new(reference, sku, quantity, eta);
+        let _product = ent.build(vec![new_batch]);
+    } else {
+        let new_batch = chapter1::Batch::new(reference, sku, quantity, eta);
+        let _product = chapter1::Product::new(sku, vec![new_batch]);
+
+        let ent = Product {
+            id: xid::new().to_string(),
+            sku: sku.to_string(),
+            version_number: 1,
+            created_at: chrono::Utc::now().naive_utc(),
+            updated_at: chrono::Utc::now().naive_utc(),
+        };
+
+        create::<&mut SqliteConnection>(db, &ent.insert_sql()).await?;
     }
 
-    let res = chapter1::allocate(lien, batches)?;
-
-    Ok(res)
+    Ok(())
 }

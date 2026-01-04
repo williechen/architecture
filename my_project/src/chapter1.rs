@@ -96,3 +96,40 @@ pub fn allocate(line: &OrderLine, batches: Vec<&mut Batch>) -> Result<Option<Str
         return Err(format!("Out of stock for sku {}", line.sku));
     }
 }
+
+pub struct Product {
+    pub sku: String,
+    pub batches: Vec<Batch>,
+    pub version_number: i32,
+}
+
+impl Product {
+    pub fn new(sku: &str, batches: Vec<Batch>) -> Self {
+        Product {
+            sku: sku.to_string(),
+            version_number: 1,
+            batches,
+        }
+    }
+
+    pub fn allocate(&mut self, line: &OrderLine) -> Result<Option<String>, String> {
+        let mut batch_refs: Vec<&mut Batch> = self
+            .batches
+            .iter_mut()
+            .filter(|b| b.can_allocate(line))
+            .collect();
+
+        batch_refs.sort_by(|a, b| {
+            a.available_quantity()
+                .partial_cmp(&b.available_quantity())
+                .unwrap()
+        });
+
+        if !batch_refs.is_empty() {
+            batch_refs[0].allocate(line);
+            return Ok(Some(batch_refs[0].reference.clone()));
+        } else {
+            return Err(format!("Out of stock for sku {}", line.sku));
+        }
+    }
+}
