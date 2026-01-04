@@ -75,7 +75,7 @@ pub async fn allocate_handler(
                     StatusCode::CREATED,
                     Json({
                         let mut res = HashMap::new();
-                        res.insert("batch_ref", batch_ref);
+                        res.insert("batch_ref", batch_ref.0);
                         res
                     }),
                 ));
