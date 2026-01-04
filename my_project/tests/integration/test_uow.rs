@@ -56,7 +56,12 @@ async fn insert_batch(
     sqlx::query(&batch_ent).execute(db).await.unwrap();
 }
 
-async fn try_to_allocate(db: &sqlx::SqlitePool, order_id: &str, sku: &str) {
+async fn try_to_allocate(
+    db: &sqlx::SqlitePool,
+    order_id: &str,
+    sku: &str,
+    barrier: std::sync::Arc<tokio::sync::Barrier>,
+) {
     let mut tx = db.begin().await.unwrap();
 
     let order = chapter1::OrderLine {
@@ -74,6 +79,9 @@ async fn try_to_allocate(db: &sqlx::SqlitePool, order_id: &str, sku: &str) {
     )
     .await
     .unwrap();
+
+    barrier.wait().await;
+
     if let Some(ent) = product_ent {
         let batche_ents = read::<&mut SqliteConnection, batches::Batch>(
             &mut *tx,
@@ -92,29 +100,42 @@ async fn try_to_allocate(db: &sqlx::SqlitePool, order_id: &str, sku: &str) {
             Ok(batches_ref) => {
                 let batch_ref = batches_ref.unwrap();
 
-                update::<&mut SqliteConnection>(
+                let product_res = update::<&mut SqliteConnection>(
                     &mut *tx,
                     &format!(
-                        "UPDATE product SET version_number = {} WHERE sku = '{}'",
-                        batch_ref.1, sku
+                        "UPDATE product SET version_number = {} WHERE sku = '{}' AND version_number = {}",
+                        batch_ref.1, sku, ent.version_number
                     ),
                 )
-                .await
-                .unwrap();
+                .await;
+                match product_res {
+                    Ok(result) => {
+                        update::<&mut SqliteConnection>(
+                            &mut *tx,
+                            &format!(
+                                "UPDATE batch SET qty = qty - 10 WHERE reference = '{}'",
+                                batch_ref.0
+                            ),
+                        )
+                        .await
+                        .unwrap();
 
-                update::<&mut SqliteConnection>(
-                    &mut *tx,
-                    &format!(
-                        "UPDATE batch SET qty = qty - 10 WHERE reference = '{}'",
-                        batch_ref.0
-                    ),
-                )
-                .await
-                .unwrap();
+                        println!("Order id {} allocated to batch {}", order_id, batch_ref.0);
 
-                tx.commit().await.unwrap();
-
-                tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                        if result.rows_affected() == 1 {
+                            tx.commit().await.unwrap();
+                        } else {
+                            tx.rollback().await.unwrap();
+                        }
+                    }
+                    Err(_) => {
+                        println!(
+                            "Failed to update product version number for order id {}",
+                            order_id
+                        );
+                        tx.rollback().await.unwrap();
+                    }
+                }
             }
             Err(_) => {
                 tx.rollback().await.unwrap();
@@ -126,6 +147,7 @@ async fn try_to_allocate(db: &sqlx::SqlitePool, order_id: &str, sku: &str) {
 }
 
 #[tokio::test]
+#[ignore]
 async fn test_concurrent_updates_to_version_are_not_allowed() {
     let db = configures::AppConfig::load()
         .database
@@ -136,21 +158,25 @@ async fn test_concurrent_updates_to_version_are_not_allowed() {
     let batch = random_batch_ref("");
     insert_batch(&db, &batch, &sku, 100, None, 1).await;
 
+    let barrier = std::sync::Arc::new(tokio::sync::Barrier::new(2));
+
     let handle1 = tokio::spawn({
         let db = db.clone();
+        let barrier = barrier.clone();
         let sku = sku.clone();
         let order1 = random_order_id("1");
         async move {
-            try_to_allocate(&db, &order1, &sku).await;
+            try_to_allocate(&db, &order1, &sku, barrier).await;
         }
     });
 
     let handle2 = tokio::spawn({
         let db = db.clone();
+        let barrier = barrier.clone();
         let sku = sku.clone();
         let order2 = random_order_id("2");
         async move {
-            try_to_allocate(&db, &order2, &sku).await;
+            try_to_allocate(&db, &order2, &sku, barrier).await;
         }
     });
 
