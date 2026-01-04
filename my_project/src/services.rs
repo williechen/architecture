@@ -56,7 +56,6 @@ pub async fn add_batch(
 
     let where_clause_string = format!("sku = '{}'", sku);
     let where_clause = Some(where_clause_string.as_str());
-    println!("Looking for product with where clause: {:?}", where_clause);
 
     let product_ent =
         read_one::<&mut SqliteConnection, Product>(db, &Product::select_sql(where_clause)).await?;
@@ -64,6 +63,18 @@ pub async fn add_batch(
     if let Some(ent) = product_ent {
         let new_batch = chapter1::Batch::new(reference, sku, quantity, eta);
         let _product = ent.build(vec![new_batch]);
+
+        let batch_ent = Batch {
+            id: xid::new().to_string(),
+            reference: reference.to_string(),
+            sku: sku.to_string(),
+            qty: quantity,
+            eta,
+            created_at: chrono::Utc::now().naive_utc(),
+            updated_at: chrono::Utc::now().naive_utc(),
+        };
+
+        create::<&mut SqliteConnection>(db, &batch_ent.insert_sql()).await?;
     } else {
         let new_batch = chapter1::Batch::new(reference, sku, quantity, eta);
         let _product = chapter1::Product::new(sku, vec![new_batch]);
@@ -77,6 +88,18 @@ pub async fn add_batch(
         };
 
         create::<&mut SqliteConnection>(db, &ent.insert_sql()).await?;
+
+        let batch_ent = Batch {
+            id: xid::new().to_string(),
+            reference: reference.to_string(),
+            sku: sku.to_string(),
+            qty: quantity,
+            eta,
+            created_at: chrono::Utc::now().naive_utc(),
+            updated_at: chrono::Utc::now().naive_utc(),
+        };
+
+        create::<&mut SqliteConnection>(db, &batch_ent.insert_sql()).await?;
     }
 
     Ok(())
