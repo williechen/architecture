@@ -112,7 +112,7 @@ impl Product {
         }
     }
 
-    pub fn allocate(&mut self, line: &OrderLine) -> Result<Option<String>, String> {
+    pub fn allocate(&mut self, line: &OrderLine) -> Result<Option<(String, i32)>, String> {
         let mut batch_refs: Vec<&mut Batch> = self
             .batches
             .iter_mut()
@@ -127,7 +127,7 @@ impl Product {
 
         if !batch_refs.is_empty() {
             batch_refs[0].allocate(line);
-            return Ok(Some(batch_refs[0].reference.clone()));
+            return Ok(Some((batch_refs[0].reference.clone(), self.version_number)));
         } else {
             return Err(format!("Out of stock for sku {}", line.sku));
         }

@@ -11,7 +11,7 @@ pub async fn allocate(
     sku: &str,
     qty: u32,
     tx: &mut Transaction<'_, sqlx::Sqlite>,
-) -> Result<Option<String>, String> {
+) -> Result<Option<(String, i32)>, String> {
     let db = &mut **tx;
 
     let order = chapter1::OrderLine {

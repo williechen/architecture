@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
 use crate::{
-    api_base::api_errors::ApiError, repositories::update, services, sitemaps::app_state::AppState,
+    api_base::api_errors::ApiError,
+    repositories::{read_one, update},
+    services,
+    sitemaps::app_state::AppState,
 };
 use axum::{
     Json, Router, debug_handler, extract::State, http::StatusCode, response::IntoResponse,
@@ -34,12 +37,33 @@ pub async fn allocate_handler(
     let allocate = services::allocate(&req.id, &req.sku, req.qty, &mut tx).await;
     match allocate {
         Ok(option) => {
+            let version_number: Option<(i32,)> = read_one::<&mut SqliteConnection, (i32,)>(
+                &mut *tx,
+                &format!(
+                    "SELECT MAX(version_number) FROM product WHERE sku = '{}'",
+                    req.sku
+                ),
+            )
+            .await
+            .unwrap();
+
             if let Some(batch_ref) = option {
+                // 檢查版本號是否衝突
+                if let Some(version_number) = version_number {
+                    if version_number.0 == batch_ref.1 {
+                        tx.rollback().await.unwrap();
+                        return Err(ApiError::BadRequest(format!(
+                            "Version number conflict for sku {}",
+                            req.sku.clone()
+                        )));
+                    }
+                }
+
                 update::<&mut SqliteConnection>(
                     &mut *tx,
                     &format!(
                         "UPDATE batch SET qty = qty - {} WHERE reference = '{}'",
-                        req.qty, batch_ref
+                        req.qty, batch_ref.0
                     ),
                 )
                 .await
