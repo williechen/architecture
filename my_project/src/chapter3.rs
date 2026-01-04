@@ -50,14 +50,24 @@ pub async fn allocate_handler(
             if let Some(batch_ref) = option {
                 // 檢查版本號是否衝突
                 if let Some(version_number) = version_number {
-                    if version_number.0 == batch_ref.1 {
+                    if version_number.0 <= batch_ref.1 {
                         tx.rollback().await.unwrap();
                         return Err(ApiError::BadRequest(format!(
                             "Version number conflict for sku {}",
-                            req.sku.clone()
+                            req.sku
                         )));
                     }
                 }
+
+                update::<&mut SqliteConnection>(
+                    &mut *tx,
+                    &format!(
+                        "UPDATE product SET version_number = {} WHERE sku = '{}'",
+                        batch_ref.1, req.sku
+                    ),
+                )
+                .await
+                .unwrap();
 
                 update::<&mut SqliteConnection>(
                     &mut *tx,

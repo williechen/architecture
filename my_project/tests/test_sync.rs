@@ -1,3 +1,7 @@
+pub mod e2e;
+pub mod integration;
+pub mod unit;
+
 use architecture::chapter2;
 
 #[test]

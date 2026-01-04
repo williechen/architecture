@@ -1,6 +1,9 @@
+use std::str::FromStr;
+use std::time::Duration;
+
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
-use sqlx::sqlite::SqlitePoolOptions;
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DatabaseConfig {
@@ -18,12 +21,17 @@ impl DatabaseConfig {
 
         tracing::info!("Connected to database at {}", conn_str);
 
-        let pool_options = SqlitePoolOptions::new();
+        let options = SqliteConnectOptions::from_str(&conn_str)
+            .unwrap()
+            .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)
+            .synchronous(sqlx::sqlite::SqliteSynchronous::Normal)
+            .busy_timeout(Duration::from_secs(5))
+            .create_if_missing(true);
 
-        let pool = pool_options
-            .connect(&conn_str)
+        let pool = SqlitePoolOptions::new()
+            .connect_with(options)
             .await
-            .expect("Failed to create database pool");
+            .unwrap();
 
         pool
     }
