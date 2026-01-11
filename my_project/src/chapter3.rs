@@ -125,9 +125,13 @@ pub async fn add_batch_handler(
         &req.reference,
         &req.sku,
         req.qty,
-        req.eta
-            .as_ref()
-            .and_then(|s| NaiveDateTime::parse_from_str(s, "%Y-%m-%d").ok()),
+        req.eta.as_ref().and_then(|s| {
+            Some(
+                NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M:%S")
+                    .unwrap()
+                    .and_utc(),
+            )
+        }),
         &mut tx,
     )
     .await

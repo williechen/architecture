@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct OrderLine {
@@ -13,13 +13,13 @@ pub struct OrderLine {
 pub struct Batch {
     pub reference: String,
     pub sku: String,
-    pub eta: Option<NaiveDateTime>,
+    pub eta: Option<DateTime<Utc>>,
     _purchased_quantity: u32,
     _allocated_lines: HashSet<OrderLine>,
 }
 
 impl Batch {
-    pub fn new(reference: &str, sku: &str, qty: u32, eta: Option<NaiveDateTime>) -> Self {
+    pub fn new(reference: &str, sku: &str, qty: u32, eta: Option<DateTime<Utc>>) -> Self {
         Batch {
             reference: reference.to_string(),
             sku: sku.to_string(),

@@ -133,11 +133,13 @@ async fn test_orderline_mapper_can_save_line() {
         created_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
             .unwrap()
             .and_hms_opt(0, 0, 0)
-            .unwrap(),
+            .unwrap()
+            .and_utc(),
         updated_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
             .unwrap()
             .and_hms_opt(0, 0, 0)
-            .unwrap(),
+            .unwrap()
+            .and_utc(),
     };
 
     create(&db, &new_line.insert_sql()).await.unwrap();
@@ -189,7 +191,8 @@ async fn test_retrieving_batches() {
                 chrono::NaiveDate::from_ymd_opt(2011, 4, 11)
                     .unwrap()
                     .and_hms_opt(0, 0, 0)
-                    .unwrap(),
+                    .unwrap()
+                    .and_utc(),
             ),
         ),
     ];
@@ -212,11 +215,13 @@ async fn test_saving_batches() {
         created_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
             .unwrap()
             .and_hms_opt(0, 0, 0)
-            .unwrap(),
+            .unwrap()
+            .and_utc(),
         updated_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
             .unwrap()
             .and_hms_opt(0, 0, 0)
-            .unwrap(),
+            .unwrap()
+            .and_utc(),
     };
 
     let insert = new_batch.insert_sql();
@@ -248,11 +253,13 @@ async fn test_saving_allocations() {
         created_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
             .unwrap()
             .and_hms_opt(0, 0, 0)
-            .unwrap(),
+            .unwrap()
+            .and_utc(),
         updated_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
             .unwrap()
             .and_hms_opt(0, 0, 0)
-            .unwrap(),
+            .unwrap()
+            .and_utc(),
     };
 
     let order_line = OrderLine {
@@ -262,11 +269,13 @@ async fn test_saving_allocations() {
         created_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
             .unwrap()
             .and_hms_opt(0, 0, 0)
-            .unwrap(),
+            .unwrap()
+            .and_utc(),
         updated_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
             .unwrap()
             .and_hms_opt(0, 0, 0)
-            .unwrap(),
+            .unwrap()
+            .and_utc(),
     };
 
     let new_allocation = allocations::Allocation {
@@ -276,11 +285,13 @@ async fn test_saving_allocations() {
         created_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
             .unwrap()
             .and_hms_opt(0, 0, 0)
-            .unwrap(),
+            .unwrap()
+            .and_utc(),
         updated_at: chrono::NaiveDate::from_ymd_opt(2025, 12, 8)
             .unwrap()
             .and_hms_opt(0, 0, 0)
-            .unwrap(),
+            .unwrap()
+            .and_utc(),
     };
 
     create(&db, &batch.insert_sql()).await.unwrap();

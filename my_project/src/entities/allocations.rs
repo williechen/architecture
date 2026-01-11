@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use sql_derives::SqlTable; // Import the macro
 
 #[derive(
@@ -8,6 +8,6 @@ pub struct Allocation {
     pub id: String,
     pub batch_id: String,
     pub order_line_id: String,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }

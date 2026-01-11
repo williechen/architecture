@@ -3,7 +3,7 @@ use architecture::{
     chapter1,
     entities::{allocations::Allocation, batches::Batch, order_lines::OrderLine},
 };
-use chrono::Local;
+use chrono::Utc;
 use serde_json::json;
 use sqlx::Executor;
 use sqlx::SqlitePool;
@@ -82,8 +82,8 @@ async fn test_repository_can_save_a_batch() {
         qty: 100,
         eta: None,
         id: xid::new().to_string(),
-        created_at: Local::now().naive_local(),
-        updated_at: Local::now().naive_local(),
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
     };
 
     create(&db, &batch.insert_sql()).await.unwrap();
@@ -145,8 +145,8 @@ async fn insert_order_line(db: &SqlitePool) -> String {
         id: "order1".to_string(),
         sku: "GENERIC-SOFA".to_string(),
         qty: 12,
-        created_at: Local::now().naive_local(),
-        updated_at: Local::now().naive_local(),
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
     };
 
     create(db, &order_line.insert_sql()).await.unwrap();
@@ -160,8 +160,8 @@ async fn insert_batch(db: &SqlitePool, batch_id: String) -> String {
         qty: 100,
         eta: None,
         id: xid::new().to_string(),
-        created_at: Local::now().naive_local(),
-        updated_at: Local::now().naive_local(),
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
     };
 
     create(db, &batch.insert_sql()).await.unwrap();
@@ -174,8 +174,8 @@ async fn insert_allocation(db: &SqlitePool, order_line_id: String, batch_id: Str
         order_line_id,
         batch_id,
         id: xid::new().to_string(),
-        created_at: Local::now().naive_local(),
-        updated_at: Local::now().naive_local(),
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
     };
 
     create(db, &allocation.insert_sql()).await.unwrap();

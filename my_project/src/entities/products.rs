@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use sql_derives::SqlTable;
 
 use crate::chapter1;
@@ -8,8 +8,8 @@ pub struct Product {
     pub id: String,
     pub sku: String,
     pub version_number: i32,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 impl Product {

@@ -1,14 +1,9 @@
 use architecture::chapter1::{Batch, OrderLine, allocate};
-use chrono::Local;
+use chrono::Utc;
 
 #[test]
 fn test_allocating_to_a_batch_reduces_the_available_quantity() {
-    let mut batch = Batch::new(
-        "batch-001",
-        "SMALL-TABLE",
-        20,
-        Some(Local::now().naive_local()),
-    );
+    let mut batch = Batch::new("batch-001", "SMALL-TABLE", 20, Some(Utc::now()));
     let line = OrderLine {
         order_id: "order-ref".to_string(),
         sku: "SMALL-TABLE".to_string(),
@@ -21,12 +16,7 @@ fn test_allocating_to_a_batch_reduces_the_available_quantity() {
 }
 
 fn make_batch_and_line(sku: &str, batch_qty: u32, line_qty: u32) -> (Batch, OrderLine) {
-    let batch = Batch::new(
-        "batch-001",
-        sku,
-        batch_qty,
-        Some(Local::now().naive_local()),
-    );
+    let batch = Batch::new("batch-001", sku, batch_qty, Some(Utc::now()));
     let line = OrderLine {
         order_id: "order-123".to_string(),
         sku: sku.to_string(),
@@ -90,12 +80,7 @@ fn test_deallocate() {
 #[test]
 fn test_prefers_current_stock_batches_to_shipments() {
     let mut in_stock_batch = Batch::new("in-stock-batch", "RETRO-CLOCK", 100, None);
-    let mut shipment_batch = Batch::new(
-        "shipment-batch",
-        "RETRO-CLOCK",
-        100,
-        Some(Local::now().naive_local()),
-    );
+    let mut shipment_batch = Batch::new("shipment-batch", "RETRO-CLOCK", 100, Some(Utc::now()));
     let line = OrderLine {
         order_id: "oref".to_string(),
         sku: "RETRO-CLOCK".to_string(),
@@ -113,24 +98,9 @@ fn test_prefers_current_stock_batches_to_shipments() {
 
 #[test]
 fn test_prefers_earlier_batches() {
-    let mut earliest = Batch::new(
-        "speedy-batch",
-        "MINIMALIST-SPOON",
-        100,
-        Some(Local::now().naive_local()),
-    );
-    let mut medium = Batch::new(
-        "normal-batch",
-        "MINIMALIST-SPOON",
-        100,
-        Some(Local::now().naive_local()),
-    );
-    let mut latest = Batch::new(
-        "slow-batch",
-        "MINIMALIST-SPOON",
-        100,
-        Some(Local::now().naive_local()),
-    );
+    let mut earliest = Batch::new("speedy-batch", "MINIMALIST-SPOON", 100, Some(Utc::now()));
+    let mut medium = Batch::new("normal-batch", "MINIMALIST-SPOON", 100, Some(Utc::now()));
+    let mut latest = Batch::new("slow-batch", "MINIMALIST-SPOON", 100, Some(Utc::now()));
     let line = OrderLine {
         order_id: "order1".to_string(),
         sku: "MINIMALIST-SPOON".to_string(),
@@ -154,7 +124,7 @@ fn test_returns_allocated_batch_reference() {
         "shipment-batch-ref",
         "HIGHBROW-POSTER",
         100,
-        Some(Local::now().naive_local()),
+        Some(Utc::now()),
     );
     let line = OrderLine {
         order_id: "oref".to_string(),

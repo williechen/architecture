@@ -24,6 +24,7 @@ http-body-util = "0.1"
 # J
 # K
 # L
+lettre = "0.11"
 # M
 # N
 # O

@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use sql_derives::SqlTable;
 
 use crate::{chapter1, entities::order_lines};
@@ -9,9 +9,9 @@ pub struct Batch {
     pub reference: String,
     pub sku: String,
     pub qty: u32,
-    pub eta: Option<NaiveDateTime>,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
+    pub eta: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 impl Batch {

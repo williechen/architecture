@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use sqlx::{SqliteConnection, Transaction};
 
 use crate::{
@@ -49,7 +50,7 @@ pub async fn add_batch(
     reference: &str,
     sku: &str,
     quantity: u32,
-    eta: Option<chrono::NaiveDateTime>,
+    eta: Option<DateTime<Utc>>,
     tx: &mut Transaction<'_, sqlx::Sqlite>,
 ) -> Result<(), sqlx::Error> {
     let db = &mut **tx;
@@ -70,8 +71,8 @@ pub async fn add_batch(
             sku: sku.to_string(),
             qty: quantity,
             eta,
-            created_at: chrono::Utc::now().naive_utc(),
-            updated_at: chrono::Utc::now().naive_utc(),
+            created_at: chrono::Utc::now(),
+            updated_at: chrono::Utc::now(),
         };
 
         create::<&mut SqliteConnection>(db, &batch_ent.insert_sql()).await?;
@@ -83,8 +84,8 @@ pub async fn add_batch(
             id: xid::new().to_string(),
             sku: sku.to_string(),
             version_number: 1,
-            created_at: chrono::Utc::now().naive_utc(),
-            updated_at: chrono::Utc::now().naive_utc(),
+            created_at: chrono::Utc::now(),
+            updated_at: chrono::Utc::now(),
         };
 
         create::<&mut SqliteConnection>(db, &ent.insert_sql()).await?;
@@ -95,8 +96,8 @@ pub async fn add_batch(
             sku: sku.to_string(),
             qty: quantity,
             eta,
-            created_at: chrono::Utc::now().naive_utc(),
-            updated_at: chrono::Utc::now().naive_utc(),
+            created_at: chrono::Utc::now(),
+            updated_at: chrono::Utc::now(),
         };
 
         create::<&mut SqliteConnection>(db, &batch_ent.insert_sql()).await?;

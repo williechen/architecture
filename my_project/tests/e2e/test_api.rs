@@ -77,8 +77,8 @@ async fn test_api_returns_allocation() {
         id: random_order_id(""),
         sku: sku.clone(),
         qty: 3,
-        created_at: Utc::now().naive_utc(),
-        updated_at: Utc::now().naive_utc(),
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
     };
 
     let route = architecture::sitemaps::sitemap(db).await;
@@ -115,8 +115,8 @@ async fn test_400_message_for_invalid_sku() {
         id: order_id.clone(),
         sku: unknown_sku.clone(),
         qty: 20,
-        created_at: Utc::now().naive_utc(),
-        updated_at: Utc::now().naive_utc(),
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
     };
 
     let route = architecture::sitemaps::sitemap(db).await;
